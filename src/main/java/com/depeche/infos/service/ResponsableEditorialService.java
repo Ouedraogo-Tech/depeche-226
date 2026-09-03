@@ -1,7 +1,6 @@
 package com.depeche.infos.service;
 
 import com.depeche.infos.entity.ResponsableEditorial;
-import com.depeche.infos.entity.RoleType;
 import com.depeche.infos.repository.ResponsableEditorialRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
 import org.springframework.stereotype.Service;
@@ -22,8 +21,7 @@ public class ResponsableEditorialService {
             throw new RuntimeException("Cet email est déjà utilisé");
         }
 
-        responsableEditorial.setRole(RoleType.RESPONSABLE_EDITORIAL);
-        responsableEditorial.setActif(true);
+
 
         return responsableEditorialRepository.save(responsableEditorial);
     }

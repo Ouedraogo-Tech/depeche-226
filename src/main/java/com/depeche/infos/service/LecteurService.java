@@ -1,7 +1,6 @@
 package com.depeche.infos.service;
 
 import com.depeche.infos.entity.Lecteur;
-import com.depeche.infos.entity.RoleType;
 import com.depeche.infos.repository.LecteurRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
 import org.springframework.stereotype.Service;
@@ -22,8 +21,7 @@ public class LecteurService {
             throw new RuntimeException("Cet email est déjà utilisé");
         }
 
-        lecteur.setRole(RoleType.LECTEUR);
-        lecteur.setActif(true);
+
 
         return lecteurRepository.save(lecteur);
     }

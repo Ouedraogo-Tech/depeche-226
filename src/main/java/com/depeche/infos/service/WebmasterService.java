@@ -1,7 +1,6 @@
 package com.depeche.infos.service;
 
 import com.depeche.infos.entity.Webmaster;
-import com.depeche.infos.entity.RoleType;
 import com.depeche.infos.repository.WebmasterRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
 import org.springframework.stereotype.Service;
@@ -22,8 +21,7 @@ public class WebmasterService {
             throw new RuntimeException("Cet email est déjà utilisé");
         }
 
-        webmaster.setRole(RoleType.WEBMASTER);
-        webmaster.setActif(true);
+
 
         return webmasterRepository.save(webmaster);
     }

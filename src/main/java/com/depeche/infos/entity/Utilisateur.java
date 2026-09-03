@@ -28,14 +28,10 @@ public abstract class Utilisateur {
     @Column(nullable = false)
     private String motDePasse;
 
-    private Long telephone;
+    private String telephone;
 
     private LocalDateTime dateInscription;
 
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private RoleType role;
 
 
     private String statut;

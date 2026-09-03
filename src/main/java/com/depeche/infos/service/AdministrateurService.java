@@ -1,7 +1,6 @@
 package com.depeche.infos.service;
 
 import com.depeche.infos.entity.Administrateur;
-import com.depeche.infos.entity.RoleType;
 import com.depeche.infos.repository.AdministrateurRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
 import org.springframework.stereotype.Service;
@@ -22,8 +21,7 @@ public class AdministrateurService {
             throw new RuntimeException("Cet email est déjà utilisé");
         }
 
-        administrateur.setRole(RoleType.ADMINISTRATEUR);
-        administrateur.setActif(true);
+
 
         return administrateurRepository.save(administrateur);
     }
