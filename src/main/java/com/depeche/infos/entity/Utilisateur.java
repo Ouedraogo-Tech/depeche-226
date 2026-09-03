@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "utilisateur")
@@ -32,7 +34,12 @@ public abstract class Utilisateur {
 
     private LocalDateTime dateInscription;
 
-
+    // Collection de rôles internes attribués par l'Admin
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "utilisateur_roles", joinColumns = @JoinColumn(name = "utilisateur_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Set<RoleType> roles = new HashSet<>();
 
     private String statut;
 

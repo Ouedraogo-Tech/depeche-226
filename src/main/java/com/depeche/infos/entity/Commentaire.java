@@ -17,20 +17,23 @@ public class Commentaire {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String contenu;
 
-    private LocalDateTime dateCommentaire;
+    private LocalDateTime dateCreation = LocalDateTime.now();
 
+    // Statut par défaut : "PUBLIE". Peut passer à "MASQUE" ou "SUPPRIME" par le webmaster.
     @Column(nullable = false)
-    private String statut;
+    private String statut = "PUBLIE";
 
+
+    // L'auteur du commentaire (Lecteur ou Utilisateur connecté)
+    @ManyToOne
+    @JoinColumn(name = "utilisateur_id", nullable = false)
+    private Utilisateur auteur;
+
+    // L'article concerné
     @ManyToOne
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;
-
-    @ManyToOne
-    @JoinColumn(name = "auteur_id", nullable = false)
-    private Utilisateur auteur;
-
 }
