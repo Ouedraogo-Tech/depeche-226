@@ -1,5 +1,6 @@
 package com.depeche.infos.entity;
 
+import com.depeche.infos.enums.StatutCommentaire;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,8 +24,9 @@ public class Commentaire {
     private LocalDateTime dateCreation = LocalDateTime.now();
 
     // Statut par défaut : "PUBLIE". Peut passer à "MASQUE" ou "SUPPRIME" par le webmaster.
+    @Enumerated(EnumType.STRING) // Dit à Hibernate de stocker le mot "PUBLIE"
     @Column(nullable = false)
-    private String statut = "PUBLIE";
+    private StatutCommentaire statut = StatutCommentaire.PUBLIE;
 
 
     // L'auteur du commentaire (Lecteur ou Utilisateur connecté)

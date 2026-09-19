@@ -1,5 +1,6 @@
 package com.depeche.infos.entity;
 
+import com.depeche.infos.enums.StatutArticle;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,12 +30,13 @@ public class Article {
 
     private LocalDateTime datePublication;
 
+    @Enumerated(EnumType.STRING) // Dit à Hibernate de stocker le mot "BROUILLON" dans la base
     @Column(nullable = false)
-    private String statut;
+    private StatutArticle statut;
 
     @ManyToOne
     @JoinColumn(name = "categorie_id", nullable = false)
-    private Categories categorie;
+    private Categorie categorie;
 
     @ManyToOne
     @JoinColumn(name = "auteur_id", nullable = false)

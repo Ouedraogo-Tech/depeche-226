@@ -1,9 +1,8 @@
 package com.depeche.infos.repository;
 
 import com.depeche.infos.entity.Utilisateur;
+import com.depeche.infos.enums.RoleType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,25 +11,18 @@ import java.util.Optional;
 @Repository
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> {
 
-    // Recherche par email pour l'authentification (résultat unique)
+    // 1. Cherche un utilisateur par son email
     Optional<Utilisateur> findByEmail(String email);
 
-    // Vérification de doublon d'email
+    // 2. Vérifie si un email existe déjà
     boolean existsByEmail(String email);
 
-    // Récupérer uniquement les utilisateurs actifs
-    List<Utilisateur> findByActifTrue();
-
-    // -- RECHERCHE PAR NOM ET PRÉNOM --
-
-    // Recherche exacte par nom (peut retourner plusieurs utilisateurs)
+    // 3. Rechercher par nom (ex: "Dupont")
     List<Utilisateur> findByNom(String nom);
 
-    // Recherche partielle par nom sans tenir compte des majuscules/minuscules (recommandée)
-    List<Utilisateur> findByNomContainingIgnoreCase(String nom);
+    // 3bis. Rechercher par une partie du nom (ex: "Henr" trouvera "Henry")
+    List<Utilisateur> findByNomContaining(String motCle);
 
-    // Recherche combinée nom et prénom
-    List<Utilisateur> findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(String nom, String prenom);
-
-
+    // 4. Rechercher les utilisateurs ayant un rôle spécifique (ex: tous les JOURNALISTE)
+    List<Utilisateur> findByRolesContaining(RoleType role);
 }

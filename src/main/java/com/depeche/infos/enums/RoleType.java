@@ -1,4 +1,4 @@
-package com.depeche.infos.entity;
+package com.depeche.infos.enums;
 
 public enum RoleType {
     ROLE_ADMIN,

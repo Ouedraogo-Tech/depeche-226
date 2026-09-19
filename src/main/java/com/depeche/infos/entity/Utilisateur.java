@@ -1,4 +1,5 @@
 package com.depeche.infos.entity;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,12 +35,15 @@ public abstract class Utilisateur {
 
     private LocalDateTime dateInscription;
 
-    // Collection de rôles internes attribués par l'Admin
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "utilisateur_roles", joinColumns = @JoinColumn(name = "utilisateur_id"))
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Set<RoleType> roles = new HashSet<>();
+    // Un utilisateur a plusieurs rôles.
+    // @ManyToMany crée une table de liaison (utilisateur_roles)
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "utilisateur_roles",
+            joinColumns = @JoinColumn(name = "utilisateur_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     private String statut;
 
