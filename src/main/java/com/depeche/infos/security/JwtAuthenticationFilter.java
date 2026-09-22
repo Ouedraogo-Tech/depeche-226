@@ -1,6 +1,5 @@
 package com.depeche.infos.security;
 
-import com.depeche.infos.securitry.UtilisateurUserDetailsService;
 import com.depeche.infos.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

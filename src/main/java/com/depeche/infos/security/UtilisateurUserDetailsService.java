@@ -1,4 +1,4 @@
-package com.depeche.infos.securitry;
+package com.depeche.infos.security;
 
 
 import com.depeche.infos.entity.Permission;

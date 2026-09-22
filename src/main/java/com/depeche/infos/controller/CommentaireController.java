@@ -8,6 +8,7 @@ import com.depeche.infos.mapper.CommentaireMapper;
 import com.depeche.infos.service.CommentaireService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class CommentaireController {
     }
 
     // POST /api/commentaires?articleId=1&auteurId=2
+    @PreAuthorize("hasAuthority('COMMENTAIRE_ECRIRE')")
     @PostMapping
     public ResponseEntity<CommentaireResponseDTO> ajouterCommentaire(
             @Valid @RequestBody CommentaireRequestDTO request,
@@ -48,6 +50,7 @@ public class CommentaireController {
     }
 
     // PATCH /api/commentaires/1/masquer -> Modérer un commentaire
+    @PreAuthorize("hasAuthority('COMMENTAIRE_MASQUER')")
     @PatchMapping("/{id}/masquer")
     public ResponseEntity<CommentaireResponseDTO> masquerCommentaire(@PathVariable Long id) {
         Commentaire commentaireMasque = commentaireService.masquerCommentaire(id);
@@ -65,6 +68,7 @@ public class CommentaireController {
     }
 
     //DELETE /api/commentaires/1 -> Supprimer définitivement un commentaire
+    @PreAuthorize("hasAuthority('COMMENTAIRE_SUPPRIMER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerCommentaire(@PathVariable Long id) {
         commentaireService.supprimerCommentaire(id);

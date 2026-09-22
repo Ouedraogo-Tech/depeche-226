@@ -1,6 +1,5 @@
 package com.depeche.infos.config;
 
-
 import com.depeche.infos.entity.Permission;
 import com.depeche.infos.entity.Role;
 import com.depeche.infos.repository.PermissionRepository;
@@ -19,9 +18,9 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(RoleRepository roleRepository, PermissionRepository permissionRepository) {
         return args -> {
-            System.out.println(">>> Initialisation des rôles et permissions (Basé sur le diagramme UML)...");
+            System.out.println(">>> Synchronisation des rôles et permissions...");
 
-            // 1. CRÉATION DES PERMISSIONS (Les bulles du diagramme)
+            // 1. CRÉATION DES PERMISSIONS
             Permission consulterActualites = createPermissionIfNotFound(permissionRepository, "ARTICLE_CONSULTER");
             Permission lireArticles = createPermissionIfNotFound(permissionRepository, "ARTICLE_LIRE");
             Permission mettreFavoris = createPermissionIfNotFound(permissionRepository, "ARTICLE_METTRE_FAVORIS");
@@ -34,71 +33,71 @@ public class DataInitializer {
             Permission enregistrerBrouillon = createPermissionIfNotFound(permissionRepository, "ARTICLE_BROUILLON_ENREGISTRER");
             Permission soumettreArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_SOUMETTRE");
             Permission publierArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_PUBLIER");
-            Permission planifierPublications = createPermissionIfNotFound(permissionRepository, "ARTICLE_PLANIFIER");
+
             Permission supprimerArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_SUPPRIMER");
-            Permission gererRubriques = createPermissionIfNotFound(permissionRepository, "RUBRIQUE_GERER");
+
+
+            Permission creerCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_CREER");
+            Permission lireCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_LIRE");
+            Permission modifierCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_MODIFIER");
+            Permission supprimerCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_SUPPRIMER");
+
+
+
             Permission suivreStats = createPermissionIfNotFound(permissionRepository, "STATISTIQUES_SUIVRE");
-            Permission gererCommentaires = createPermissionIfNotFound(permissionRepository, "COMMENTAIRE_GERER");
+
+
+            Permission masquerCommentaire = createPermissionIfNotFound(permissionRepository, "COMMENTAIRE_MASQUER");
+            Permission publierCommentaire = createPermissionIfNotFound(permissionRepository, "COMMENTAIRE_PUBLIER");
+
+
+
             Permission gererNotifications = createPermissionIfNotFound(permissionRepository, "NOTIFICATION_GERER");
 
             Permission creerComptes = createPermissionIfNotFound(permissionRepository, "UTILISATEUR_CREER");
             Permission attribuerRoles = createPermissionIfNotFound(permissionRepository, "ROLE_ATTRIBUER");
-            Permission desactiverComptes = createPermissionIfNotFound(permissionRepository, "UTILISATEUR_DESACTIVER_SUPPRIMER");
+            Permission desactiverComptes = createPermissionIfNotFound(permissionRepository, "UTILISATEUR_DESACTIVER_SUSPENDRE");
 
-            // 2. ATTRIBUTION DES PERMISSIONS AUX RÔLES (Les acteurs du diagramme)
+
+            // 2. MISE À JOUR OU CRÉATION DES RÔLES (Find or Create)
 
             // RÔLE LECTEUR
-            if (!roleRepository.findByName("LECTEUR").isPresent()) {
-                Role lecteur = new Role("LECTEUR");
-                Set<Permission> permsLecteur = new HashSet<>(Arrays.asList(
-                        consulterActualites, lireArticles, mettreFavoris, consulterCategories, commenterArticles, abonnerNewsletter
-                ));
-                lecteur.setPermissions(permsLecteur);
-                roleRepository.save(lecteur);
-            }
+            Role lecteur = roleRepository.findByName("LECTEUR").orElseGet(() -> new Role("LECTEUR"));
+            lecteur.setPermissions(new HashSet<>(Arrays.asList(
+                    consulterActualites, lireArticles, mettreFavoris, consulterCategories, commenterArticles, abonnerNewsletter
+            )));
+            roleRepository.save(lecteur);
 
             // RÔLE JOURNALISTE
-            if (!roleRepository.findByName("JOURNALISTE").isPresent()) {
-                Role journaliste = new Role("JOURNALISTE");
-                Set<Permission> permsJournaliste = new HashSet<>(Arrays.asList(
-                        redigerArticle, modifierArticle, publierArticle, soumettreArticle, consulterActualites, supprimerArticle
-                ));
-                journaliste.setPermissions(permsJournaliste);
-                roleRepository.save(journaliste);
-            }
+            Role journaliste = roleRepository.findByName("JOURNALISTE").orElseGet(() -> new Role("JOURNALISTE"));
+            journaliste.setPermissions(new HashSet<>(Arrays.asList(
+                    redigerArticle, modifierArticle, publierArticle, soumettreArticle, consulterActualites, supprimerArticle, enregistrerBrouillon, lireArticles
+            )));
+            roleRepository.save(journaliste);
 
             // RÔLE RESPONSABLE EDITORIAL
-            if (!roleRepository.findByName("RESPONSABLE_EDITORIAL").isPresent()) {
-                Role responsable = new Role("RESPONSABLE_EDITORIAL");
-                Set<Permission> permsResponsable = new HashSet<>(Arrays.asList(
-                        redigerArticle, modifierArticle, enregistrerBrouillon, soumettreArticle,
-                        supprimerArticle, planifierPublications, consulterActualites, gererRubriques, suivreStats
-                ));
-                responsable.setPermissions(permsResponsable);
-                roleRepository.save(responsable);
-            }
+            Role responsable = roleRepository.findByName("RESPONSABLE_EDITORIAL").orElseGet(() -> new Role("RESPONSABLE_EDITORIAL"));
+            responsable.setPermissions(new HashSet<>(Arrays.asList(
+                    redigerArticle, modifierArticle, enregistrerBrouillon,
+                    supprimerArticle, publierArticle, consulterActualites, creerCategorie, lireCategorie, modifierCategorie, supprimerCategorie, suivreStats
+            )));
+            roleRepository.save(responsable);
 
             // RÔLE WEBMASTER
-            if (!roleRepository.findByName("WEBMASTER").isPresent()) {
-                Role webmaster = new Role("WEBMASTER");
-                Set<Permission> permsWebmaster = new HashSet<>(Arrays.asList(
-                        suivreStats, gererCommentaires, gererNotifications
-                ));
-                webmaster.setPermissions(permsWebmaster);
-                roleRepository.save(webmaster);
-            }
+            Role webmaster = roleRepository.findByName("WEBMASTER").orElseGet(() -> new Role("WEBMASTER"));
+            webmaster.setPermissions(new HashSet<>(Arrays.asList(
+                    suivreStats, masquerCommentaire, publierCommentaire, gererNotifications
+            )));
+            roleRepository.save(webmaster);
 
-            // RÔLE ADMIN (A TOUTES LES PERMISSIONS)
-            if (!roleRepository.findByName("ADMIN").isPresent()) {
-                Role admin = new Role("ADMIN");
-                Set<Permission> allPerms = new HashSet<>(Arrays.asList(
-                        consulterActualites, creerComptes, attribuerRoles, consulterCategories, desactiverComptes
-                ));
-                admin.setPermissions(allPerms);
-                roleRepository.save(admin);
-            }
+            // RÔLE ADMIN
+            Role admin = roleRepository.findByName("ADMIN").orElseGet(() -> new Role("ADMIN"));
+            admin.setPermissions(new HashSet<>(Arrays.asList(
+                    consulterActualites, creerComptes, attribuerRoles, consulterCategories, desactiverComptes
+            )));
+            roleRepository.save(admin);
 
-            System.out.println(">>> Rôles et permissions initialisés avec succès !");
+            System.out.println(">>> Synchronisation terminée avec succès !");
         };
     }
 

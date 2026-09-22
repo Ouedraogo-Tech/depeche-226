@@ -8,6 +8,7 @@ import com.depeche.infos.service.ArticleService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ public class ArticleController {
     // --- LES OPÉRATIONS CRUD ---
 
     // POST /api/articles?auteurId=1 -> Créer un article
+    @PreAuthorize("hasAuthority('ARTICLE_ECRIRE')")
     @PostMapping
     public ResponseEntity<ArticleResponseDTO> creerArticle(@Valid @RequestBody ArticleRequestDTO request, @RequestParam Long auteurId) {
         // 1. On convertit le RequestDTO en Entité
@@ -63,6 +65,7 @@ public class ArticleController {
     }
 
     // PUT /api/articles/1 -> Modifier un article
+    @PreAuthorize("hasAuthority('ARTICLE_MODIFIER')")
     @PutMapping("/{id}")
     public ResponseEntity<ArticleResponseDTO> modifierArticle(@PathVariable Long id, @Valid @RequestBody ArticleRequestDTO request) {
         Article articleModifie = articleMapper.toEntity(request);
@@ -71,6 +74,7 @@ public class ArticleController {
     }
 
     // DELETE /api/articles/1 -> Supprimer un article
+    @PreAuthorize("hasAuthority('ARTICLE_SUPPRIMER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerArticle(@PathVariable Long id) {
         articleService.supprimerArticle(id);
@@ -78,28 +82,32 @@ public class ArticleController {
     }
 
     // --- LA GESTION DES STATUTS ---
-
+    @PreAuthorize("hasAuthority('ARTICLE_BROUILLON_ENREGISTRER')")
     @PatchMapping("/{id}/brouillon")
     public ResponseEntity<ArticleResponseDTO> mettreEnBrouillon(@PathVariable Long id) {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.mettreEnBrouillons(id)));
     }
 
+    @PreAuthorize("hasAuthority('ARTICLE_SOUMETTRE')")
     @PatchMapping("/{id}/soumettre")
     public ResponseEntity<ArticleResponseDTO> soumettreArticle(@PathVariable Long id) {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.soumettreArticle(id)));
     }
 
+    @PreAuthorize("hasAuthority('ARTICLE_PUBLIER')")
     @PatchMapping("/{id}/publier")
     public ResponseEntity<ArticleResponseDTO> publierArticle(@PathVariable Long id) {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.publierArticle(id)));
     }
 
+    @PreAuthorize("hasAuthority('ARTICLE_PLANIFIER')")
     @PatchMapping("/{id}/planifier")
     public ResponseEntity<ArticleResponseDTO> planifierArticle(@PathVariable Long id, @RequestParam String date) {
         LocalDateTime datePublication = LocalDateTime.parse(date);
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.planifierArticle(id, datePublication)));
     }
 
+    @PreAuthorize("hasAuthority('ARTICLE_PUBLIER')")
     @PatchMapping("/{id}/archiver")
     public ResponseEntity<ArticleResponseDTO> archiverArticle(@PathVariable Long id) {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.archiverArticle(id)));

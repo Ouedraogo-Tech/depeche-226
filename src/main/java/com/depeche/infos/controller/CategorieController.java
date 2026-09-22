@@ -7,6 +7,7 @@ import com.depeche.infos.mapper.CategorieMapper;
 import com.depeche.infos.service.CategorieService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class CategorieController {
     }
 
     // POST /api/categories -> Créer une catégorie
+    @PreAuthorize("hasAuthority('CATEGORIE_CREER')")
     @PostMapping
     public ResponseEntity<CategorieResponseDTO> creerCategorie(@Valid @RequestBody CategorieRequestDTO request) {
         Categorie nouvelleCategorie = categorieService.creerCategorie(request);
@@ -51,6 +53,7 @@ public class CategorieController {
     // --- NOUVEAUX ENDPOINTS ---
 
     // PUT /api/categories/1 -> Modifier une catégorie
+    @PreAuthorize("hasAuthority('CATEGORIE_MODIFIER')")
     @PutMapping("/{id}")
     public ResponseEntity<CategorieResponseDTO> modifierCategorie(@PathVariable Long id, @Valid @RequestBody CategorieRequestDTO request) {
         Categorie categorieModifiee = categorieService.modifierCategorie(id, request);
@@ -58,6 +61,7 @@ public class CategorieController {
     }
 
     // DELETE /api/categories/1 -> Supprimer une catégorie
+    @PreAuthorize("hasAuthority('CATEGORIE_SUPPRIMER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerCategorie(@PathVariable Long id) {
         categorieService.supprimerCategorie(id);
