@@ -66,4 +66,38 @@ public class UtilisateurService {
 
         return utilisateurRepository.save(utilisateur);
     }
+
+    // 4. Modifier un utilisateur (par l'Admin)
+    public Utilisateur modifierUtilisateur(Long id, Utilisateur utilisateurModifie) {
+        Utilisateur utilisateurExistant = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable avec l'id : " + id));
+
+        utilisateurExistant.setNom(utilisateurModifie.getNom());
+        utilisateurExistant.setPrenom(utilisateurModifie.getPrenom());
+
+        // Si l'admin fournit un nouveau mot de passe, on le hache. Sinon on garde l'ancien.
+        if (utilisateurModifie.getMotDePasse() != null && !utilisateurModifie.getMotDePasse().isEmpty()) {
+            utilisateurExistant.setMotDePasse(passwordEncoder.encode(utilisateurModifie.getMotDePasse()));
+        }
+
+        return utilisateurRepository.save(utilisateurExistant);
+    }
+
+    // 5. Suspendre un compte (Désactivation)
+    public Utilisateur suspendreUtilisateur(Long id) {
+        Utilisateur utilisateur = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable avec l'id : " + id));
+
+        utilisateur.setActif(false); // On met le statut à false
+        return utilisateurRepository.save(utilisateur);
+    }
+
+    // 6. Réactiver un compte
+    public Utilisateur activerUtilisateur(Long id) {
+        Utilisateur utilisateur = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable avec l'id : " + id));
+
+        utilisateur.setActif(true); // On remet le statut à true
+        return utilisateurRepository.save(utilisateur);
+    }
 }

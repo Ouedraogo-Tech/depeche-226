@@ -6,6 +6,9 @@ import com.depeche.infos.dto.UtilisateurResponseDTO;
 import com.depeche.infos.entity.*;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Component
 public class UtilisateurMapper {
 
@@ -34,9 +37,10 @@ public class UtilisateurMapper {
         utilisateur.setNom(request.getNom());
         utilisateur.setPrenom(request.getPrenom());
         utilisateur.setEmail(request.getEmail());
+        utilisateur.setTelephone(request.getTelephone());
         utilisateur.setMotDePasse(request.getMotDePasse());
 
-        // ON A SUPPRIMÉ LA PARTIE DES ROLES ICI
+
 
         return utilisateur;
     }
@@ -48,6 +52,13 @@ public class UtilisateurMapper {
         dto.setNom(utilisateur.getNom());
         dto.setPrenom(utilisateur.getPrenom());
         dto.setEmail(utilisateur.getEmail());
+        dto.setTelephone(utilisateur.getTelephone());
+
+        // On transforme les objets Rôle en simple texte (ex: "ADMIN")
+        Set<String> roleNames = utilisateur.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+        dto.setRoles(roleNames);
         return dto;
     }
 

@@ -3,10 +3,16 @@ package com.depeche.infos.controller;
 import com.depeche.infos.dto.ArticleRequestDTO;
 import com.depeche.infos.dto.ArticleResponseDTO;
 import com.depeche.infos.entity.Article;
+import com.depeche.infos.entity.Utilisateur;
+import com.depeche.infos.exception.RessourceIntrouvableException;
 import com.depeche.infos.mapper.ArticleMapper;
+import com.depeche.infos.repository.UtilisateurRepository;
 import com.depeche.infos.service.ArticleService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -20,30 +26,38 @@ public class ArticleController {
 
     private final ArticleService articleService;
     private final ArticleMapper articleMapper;
+    private final UtilisateurRepository utilisateurRepository;
 
     // On injecte le Service ET le Mapper
-    public ArticleController(ArticleService articleService, ArticleMapper articleMapper) {
+    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, UtilisateurRepository utilisateurRepository) {
         this.articleService = articleService;
         this.articleMapper = articleMapper;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
-    // --- LES OPÉRATIONS CRUD ---
+    // LES OPÉRATIONS CRUD
 
-    // POST /api/articles?auteurId=1 -> Créer un article
+    // POST /api/articles -> On ne demande plus auteurId dans l'URL !
     @PreAuthorize("hasAuthority('ARTICLE_ECRIRE')")
     @PostMapping
-    public ResponseEntity<ArticleResponseDTO> creerArticle(@Valid @RequestBody ArticleRequestDTO request, @RequestParam Long auteurId) {
-        // 1. On convertit le RequestDTO en Entité
+    public ResponseEntity<ArticleResponseDTO> creerArticle(@Valid @RequestBody ArticleRequestDTO request) {
+        // 1. On récupère l'email du journaliste connecté
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String emailConnecte = userDetails.getUsername();
+
+        // 2. On cherche le journaliste en base
+        Utilisateur auteur = utilisateurRepository.findByEmail(emailConnecte)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur non trouvé"));
+
+        // 3. On crée l'article en utilisant l'ID de l'utilisateur connecté
         Article article = articleMapper.toEntity(request);
+        Article nouvelArticle = articleService.creeArticle(article, auteur.getId(), request.getCategorieId());
 
-        // 2. Le service gère la création (statut, date, auteur, categorie)
-        Article nouvelArticle = articleService.creeArticle(article, auteurId, request.getCategorieId());
-
-        // 3. On convertit l'entité sauvegardée en ResponseDTO pour Postman
         return ResponseEntity.status(201).body(articleMapper.toResponseDTO(nouvelArticle));
     }
 
-    // GET /api/articles -> Lister tous les articles
+    // GET /api/articles :Lister tous les articles
     @GetMapping
     public ResponseEntity<List<ArticleResponseDTO>> listerArticles() {
         List<Article> articles = articleService.listerTousLesArticles();
@@ -56,7 +70,7 @@ public class ArticleController {
         return ResponseEntity.ok(dtos);
     }
 
-    // GET /api/articles/1 -> Afficher un article par son ID
+    // GET /api/articles/1 :Afficher un article par son ID
     @GetMapping("/{id}")
     public ResponseEntity<ArticleResponseDTO> obtenirArticleParId(@PathVariable Long id) {
         return articleService.rechercherArticleParId(id)
@@ -73,7 +87,7 @@ public class ArticleController {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleMisAJour));
     }
 
-    // DELETE /api/articles/1 -> Supprimer un article
+    // DELETE /api/articles/1 :Supprimer un article
     @PreAuthorize("hasAuthority('ARTICLE_SUPPRIMER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerArticle(@PathVariable Long id) {
@@ -81,7 +95,7 @@ public class ArticleController {
         return ResponseEntity.noContent().build();
     }
 
-    // --- LA GESTION DES STATUTS ---
+    //LA GESTION DES STATUTS
     @PreAuthorize("hasAuthority('ARTICLE_BROUILLON_ENREGISTRER')")
     @PatchMapping("/{id}/brouillon")
     public ResponseEntity<ArticleResponseDTO> mettreEnBrouillon(@PathVariable Long id) {

@@ -14,9 +14,9 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI depecheInfosOpenAPI() {
         return new OpenAPI()
-                // 1. On dit à Swagger que toutes les routes exigent un token
+                // 1. Swagger que toutes les routes exigent un token
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                // 2. On définit comment fonctionne ce token (JWT)
+                // 2. le fonctionne ce token (JWT)
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
                                 new SecurityScheme()

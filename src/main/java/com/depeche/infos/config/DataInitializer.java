@@ -33,7 +33,6 @@ public class DataInitializer {
             Permission enregistrerBrouillon = createPermissionIfNotFound(permissionRepository, "ARTICLE_BROUILLON_ENREGISTRER");
             Permission soumettreArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_SOUMETTRE");
             Permission publierArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_PUBLIER");
-
             Permission supprimerArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_SUPPRIMER");
 
 

@@ -2,6 +2,7 @@ package com.depeche.infos.dto;
 
 
 import com.depeche.infos.enums.RoleType;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -16,7 +17,10 @@ public class UtilisateurRequestDTO {
     private String prenom;
 
     @NotBlank(message = "L'email est obligatoire")
+    @Email(message = "Le format de l'email est invalide")
     private String email;
+
+    private String telephone;
 
     @NotBlank(message = "Le mot de passe est obligatoire")
     private String motDePasse;

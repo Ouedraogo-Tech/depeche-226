@@ -19,6 +19,8 @@ public class CategorieService {
         this.categorieRepository = categorieRepository;
     }
 
+
+    //creer une categorie
     public Categorie creerCategorie(CategorieRequestDTO request) {
         if (categorieRepository.existsByNom(request.getNom())) {
             throw new RuntimeException("Cette catégorie existe déjà !");
@@ -29,6 +31,8 @@ public class CategorieService {
         return categorieRepository.save(categorie);
     }
 
+
+    // lister toutes les categorie
     public List<Categorie> listerToutesLesCategories() {
         return categorieRepository.findAll();
     }
@@ -38,7 +42,7 @@ public class CategorieService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Catégorie introuvable avec l'id : " + id));
     }
 
-    // --- NOUVELLE MÉTHODE : MODIFIER ---
+    // modifier une categorie par id
     public Categorie modifierCategorie(Long id, CategorieRequestDTO request) {
         Categorie categorieExistante = categorieRepository.findById(id)
                 .orElseThrow(() -> new RessourceIntrouvableException("Catégorie introuvable avec l'id : " + id));
@@ -49,7 +53,7 @@ public class CategorieService {
         return categorieRepository.save(categorieExistante);
     }
 
-    // --- NOUVELLE MÉTHODE : SUPPRIMER ---
+    // supprimer un categorie par id
     public void supprimerCategorie(Long id) {
         if (!categorieRepository.existsById(id)) {
             throw new RessourceIntrouvableException("Catégorie introuvable avec l'id : " + id);

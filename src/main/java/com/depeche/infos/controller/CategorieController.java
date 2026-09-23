@@ -25,7 +25,7 @@ public class CategorieController {
         this.categorieMapper = categorieMapper;
     }
 
-    // POST /api/categories -> Créer une catégorie
+    // POST /api/categories : Créer une catégorie
     @PreAuthorize("hasAuthority('CATEGORIE_CREER')")
     @PostMapping
     public ResponseEntity<CategorieResponseDTO> creerCategorie(@Valid @RequestBody CategorieRequestDTO request) {
@@ -33,7 +33,7 @@ public class CategorieController {
         return ResponseEntity.status(201).body(categorieMapper.toResponseDTO(nouvelleCategorie));
     }
 
-    // GET /api/categories -> Lister toutes les catégories
+    // GET /api/categories :Lister toutes les catégories
     @GetMapping
     public ResponseEntity<List<CategorieResponseDTO>> listerCategories() {
         List<Categorie> categories = categorieService.listerToutesLesCategories();
@@ -43,16 +43,16 @@ public class CategorieController {
         return ResponseEntity.ok(dtos);
     }
 
-    // GET /api/categories/1 -> Afficher une catégorie par son ID
+    // GET /api/categories/1 : Afficher une catégorie par son ID
     @GetMapping("/{id}")
     public ResponseEntity<CategorieResponseDTO> obtenirCategorieParId(@PathVariable Long id) {
         Categorie categorie = categorieService.trouverCategorieParId(id);
         return ResponseEntity.ok(categorieMapper.toResponseDTO(categorie));
     }
 
-    // --- NOUVEAUX ENDPOINTS ---
 
-    // PUT /api/categories/1 -> Modifier une catégorie
+
+    // PUT /api/categories/1 : Modifier une catégorie
     @PreAuthorize("hasAuthority('CATEGORIE_MODIFIER')")
     @PutMapping("/{id}")
     public ResponseEntity<CategorieResponseDTO> modifierCategorie(@PathVariable Long id, @Valid @RequestBody CategorieRequestDTO request) {
@@ -60,7 +60,7 @@ public class CategorieController {
         return ResponseEntity.ok(categorieMapper.toResponseDTO(categorieModifiee));
     }
 
-    // DELETE /api/categories/1 -> Supprimer une catégorie
+    // DELETE /api/categories/1 :Supprimer une catégorie
     @PreAuthorize("hasAuthority('CATEGORIE_SUPPRIMER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerCategorie(@PathVariable Long id) {
