@@ -5,5 +5,6 @@ public enum RoleType {
     ROLE_JOURNALISTE,
     ROLE_RESPONSABLE_EDITORIAL,
     ROLE_WEBMASTER,
+    ROLE_LECTEUR,
 
 }

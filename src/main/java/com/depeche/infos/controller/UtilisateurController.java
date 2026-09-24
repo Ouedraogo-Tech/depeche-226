@@ -72,4 +72,12 @@ public class UtilisateurController {
         com.depeche.infos.entity.Utilisateur userActive = utilisateurService.activerUtilisateur(id);
         return ResponseEntity.ok(utilisateurMapper.toResponseDTO(userActive));
     }
+
+        // PATCH /api/utilisateurs/1/role?role=JOURNALISTE -> Attribuer un rôle
+    @PreAuthorize("hasAuthority('ROLE_ATTRIBUER')")
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<UtilisateurResponseDTO> attribuerRole(@PathVariable Long id, @RequestParam String role) {
+        com.depeche.infos.entity.Utilisateur utilisateurMisAJour = utilisateurService.attribuerRole(id, role);
+        return ResponseEntity.ok(utilisateurMapper.toResponseDTO(utilisateurMisAJour));
+    }
 }

@@ -126,4 +126,20 @@ public class ArticleController {
     public ResponseEntity<ArticleResponseDTO> archiverArticle(@PathVariable Long id) {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.archiverArticle(id)));
     }
+
+        // GET /api/articles/moi -> Lister uniquement mes propres articles (Journaliste connecté)
+    @PreAuthorize("hasAuthority('ARTICLE_ECRIRE')")
+    @GetMapping("/moi")
+    public ResponseEntity<List<ArticleResponseDTO>> mesArticles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String emailConnecte = userDetails.getUsername();
+
+        List<Article> articles = articleService.listerArticlesParAuteur(emailConnecte);
+        List<ArticleResponseDTO> dtos = articles.stream()
+                .map(articleMapper::toResponseDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
 }

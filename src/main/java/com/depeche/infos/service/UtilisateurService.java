@@ -100,4 +100,19 @@ public class UtilisateurService {
         utilisateur.setActif(true); // On remet le statut à true
         return utilisateurRepository.save(utilisateur);
     }
+
+        // 7. Attribuer un rôle à un utilisateur (par l'Admin)
+    public Utilisateur attribuerRole(Long id, String nomRole) {
+        Utilisateur utilisateur = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable avec l'id : " + id));
+
+        Role role = roleRepository.findByName(nomRole)
+                .orElseThrow(() -> new RessourceIntrouvableException("Le rôle " + nomRole + " n'existe pas en base de données."));
+
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+        utilisateur.setRoles(roles);
+
+        return utilisateurRepository.save(utilisateur);
+    }
 }

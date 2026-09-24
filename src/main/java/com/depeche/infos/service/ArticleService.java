@@ -104,4 +104,11 @@ public class ArticleService {
         article.setStatut(StatutArticle.ARCHIVE);
         return articleRepository.save(article);
     }
+
+        // 8. Lister les articles d'un auteur précis (pour "Mes articles" côté Journaliste)
+    public List<Article> listerArticlesParAuteur(String emailAuteur) {
+        Utilisateur auteur = utilisateurRepository.findByEmail(emailAuteur)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable avec l'email : " + emailAuteur));
+        return articleRepository.findByAuteur(auteur);
+    }
 }
