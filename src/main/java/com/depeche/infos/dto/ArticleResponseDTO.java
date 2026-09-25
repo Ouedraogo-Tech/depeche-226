@@ -10,9 +10,11 @@ import java.time.LocalDateTime;
 public class ArticleResponseDTO {
     private Long id;
     private String titre;
+    private String resume;
     private String contenu;
     private String image;
     private StatutArticle statut;
+    private String commentaireEditorial;
     private LocalDateTime dateCreation;
     private LocalDateTime datePublication;
     private Long auteurId;

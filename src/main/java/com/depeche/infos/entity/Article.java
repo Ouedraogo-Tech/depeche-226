@@ -3,8 +3,9 @@ package com.depeche.infos.entity;
 import com.depeche.infos.enums.StatutArticle;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,6 +22,10 @@ public class Article {
     @Column(nullable = false)
     private String titre;
 
+    // Chapeau affiché sur la page d'accueil (facultatif)
+    @Column(length = 300)
+    private String resume;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String contenu;
 
@@ -31,8 +36,12 @@ public class Article {
     private LocalDateTime datePublication;
 
     @Enumerated(EnumType.STRING) // Dit à Hibernate de stocker le mot "BROUILLON" dans la base
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private StatutArticle statut;
+
+    // Dernier retour du responsable éditorial (validation, demande de modification ou refus)
+    @Column(columnDefinition = "TEXT")
+    private String commentaireEditorial;
 
     @ManyToOne
     @JoinColumn(name = "categorie_id", nullable = false)
@@ -41,5 +50,4 @@ public class Article {
     @ManyToOne
     @JoinColumn(name = "auteur_id", nullable = false)
     private Utilisateur auteur;
-
 }

@@ -3,6 +3,7 @@ package com.depeche.infos.repository;
 import com.depeche.infos.entity.Article;
 import com.depeche.infos.entity.Commentaire;
 import com.depeche.infos.entity.Utilisateur;
+import com.depeche.infos.enums.StatutCommentaire;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,13 +17,23 @@ public interface CommentaireRepository extends JpaRepository<Commentaire, Long> 
 
     // 2. Récupérer les commentaires d'un article selon leur statut
     // (ex: on n'affiche que les "PUBLIE" pour les lecteurs)
-    List<Commentaire> findByArticleAndStatut(Article article, String statut);
+    // Correction : le paramètre est maintenant l'enum StatutCommentaire (et non un String)
+    List<Commentaire> findByArticleAndStatutOrderByDateCreationDesc(Article article, StatutCommentaire statut);
 
     // 3. Récupérer tous les commentaires faits par un utilisateur
-    // (utile pour voir l'historique d'un lecteur ou le bannir si besoin)
     List<Commentaire> findByAuteur(Utilisateur auteur);
 
-    // 4. Récupérer tous les commentaires par statut sur tout le site
-    // (utile pour le Webmaster : afficher tous les commentaires "MASQUE" ou "SUPPRIME")
-    List<Commentaire> findByStatut(String statut);
+    // 4. Récupérer tous les commentaires par statut sur tout le site (utile pour le Webmaster)
+    List<Commentaire> findByStatutOrderByDateCreationDesc(StatutCommentaire statut);
+
+    List<Commentaire> findAllByOrderByDateCreationDesc();
+
+    // 5. Commentaires reçus sur les articles d'un journaliste
+    List<Commentaire> findByArticle_AuteurOrderByDateCreationDesc(Utilisateur auteur);
+
+    // 6. Supprimer les commentaires d'un article (avant de supprimer l'article lui-même)
+    void deleteByArticle(Article article);
+
+    // 7. Statistiques
+    long countByStatut(StatutCommentaire statut);
 }

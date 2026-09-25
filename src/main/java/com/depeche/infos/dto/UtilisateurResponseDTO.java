@@ -3,6 +3,7 @@ package com.depeche.infos.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -14,4 +15,7 @@ public class UtilisateurResponseDTO {
     private String email;
     private String telephone;
     private Set<String> roles;
+    // Ajout : nécessaire pour afficher "Actif / Désactivé" dans l'espace Administrateur
+    private boolean actif;
+    private LocalDateTime dateInscription;
 }

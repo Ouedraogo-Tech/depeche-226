@@ -1,23 +1,43 @@
 package com.depeche.infos.config;
 
+import com.depeche.infos.entity.Administrateur;
 import com.depeche.infos.entity.Permission;
 import com.depeche.infos.entity.Role;
 import com.depeche.infos.repository.PermissionRepository;
 import com.depeche.infos.repository.RoleRepository;
+import com.depeche.infos.repository.UtilisateurRepository;
+import com.depeche.infos.service.ParametreSiteService;
+import com.depeche.infos.service.UtilisateurService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 
 @Configuration
 public class DataInitializer {
 
+    // Compte administrateur créé au premier démarrage (si aucun ADMIN n'existe).
+    // À personnaliser dans application.properties.
+    @Value("${app.admin.email:admin@depeche226.bf}")
+    private String adminEmail;
+
+    @Value("${app.admin.password:Admin@2026}")
+    private String adminPassword;
+
     @Bean
-    CommandLineRunner initDatabase(RoleRepository roleRepository, PermissionRepository permissionRepository) {
+    CommandLineRunner initDatabase(RoleRepository roleRepository, PermissionRepository permissionRepository,
+                                   UtilisateurRepository utilisateurRepository, UtilisateurService utilisateurService,
+                                   ParametreSiteService parametreSiteService, JdbcTemplate jdbcTemplate) {
         return args -> {
+            // 0. Correction : Hibernate a créé une contrainte CHECK sur article.statut avec l'ANCIENNE liste
+            // de statuts. Elle bloquerait les nouveaux statuts (A_REVISER, REFUSE) : on la supprime.
+            // (ddl-auto=update ne met jamais à jour une contrainte existante)
+            jdbcTemplate.execute("ALTER TABLE IF EXISTS article DROP CONSTRAINT IF EXISTS article_statut_check");
+
             System.out.println(">>> Synchronisation des rôles et permissions...");
 
             // 1. CRÉATION DES PERMISSIONS
@@ -34,6 +54,10 @@ public class DataInitializer {
             Permission soumettreArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_SOUMETTRE");
             Permission publierArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_PUBLIER");
             Permission supprimerArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_SUPPRIMER");
+            // Correction : utilisée par PATCH /articles/{id}/planifier mais jamais créée
+            Permission planifierArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_PLANIFIER");
+            // Nouveau : valider / demander une modification / refuser un article soumis
+            Permission validerArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_VALIDER");
 
 
             Permission creerCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_CREER");
@@ -42,16 +66,20 @@ public class DataInitializer {
             Permission supprimerCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_SUPPRIMER");
 
 
-
             Permission suivreStats = createPermissionIfNotFound(permissionRepository, "STATISTIQUES_SUIVRE");
 
 
             Permission masquerCommentaire = createPermissionIfNotFound(permissionRepository, "COMMENTAIRE_MASQUER");
             Permission publierCommentaire = createPermissionIfNotFound(permissionRepository, "COMMENTAIRE_PUBLIER");
-
+            // Correction : utilisée par DELETE /commentaires/{id} mais jamais créée
+            Permission supprimerCommentaire = createPermissionIfNotFound(permissionRepository, "COMMENTAIRE_SUPPRIMER");
 
 
             Permission gererNotifications = createPermissionIfNotFound(permissionRepository, "NOTIFICATION_GERER");
+            // Nouveau : gérer la liste des abonnés (Webmaster)
+            Permission gererNewsletter = createPermissionIfNotFound(permissionRepository, "NEWSLETTER_GERER");
+            // Nouveau : gérer les paramètres du footer (Webmaster)
+            Permission gererParametres = createPermissionIfNotFound(permissionRepository, "PARAMETRES_GERER");
 
             Permission creerComptes = createPermissionIfNotFound(permissionRepository, "UTILISATEUR_CREER");
             Permission attribuerRoles = createPermissionIfNotFound(permissionRepository, "ROLE_ATTRIBUER");
@@ -70,7 +98,8 @@ public class DataInitializer {
             // RÔLE JOURNALISTE
             Role journaliste = roleRepository.findByName("JOURNALISTE").orElseGet(() -> new Role("JOURNALISTE"));
             journaliste.setPermissions(new HashSet<>(Arrays.asList(
-                    redigerArticle, modifierArticle, publierArticle, soumettreArticle, consulterActualites, supprimerArticle, enregistrerBrouillon, lireArticles
+                    redigerArticle, modifierArticle, publierArticle, soumettreArticle, consulterActualites, supprimerArticle,
+                    enregistrerBrouillon, lireArticles, planifierArticle
             )));
             roleRepository.save(journaliste);
 
@@ -78,25 +107,42 @@ public class DataInitializer {
             Role responsable = roleRepository.findByName("RESPONSABLE_EDITORIAL").orElseGet(() -> new Role("RESPONSABLE_EDITORIAL"));
             responsable.setPermissions(new HashSet<>(Arrays.asList(
                     redigerArticle, modifierArticle, enregistrerBrouillon,
-                    supprimerArticle, publierArticle, consulterActualites, creerCategorie, lireCategorie, modifierCategorie, supprimerCategorie, suivreStats
+                    supprimerArticle, publierArticle, consulterActualites, creerCategorie, lireCategorie, modifierCategorie,
+                    supprimerCategorie, suivreStats, planifierArticle, validerArticle
             )));
             roleRepository.save(responsable);
 
             // RÔLE WEBMASTER
             Role webmaster = roleRepository.findByName("WEBMASTER").orElseGet(() -> new Role("WEBMASTER"));
             webmaster.setPermissions(new HashSet<>(Arrays.asList(
-                    suivreStats, masquerCommentaire, publierCommentaire, gererNotifications
+                    suivreStats, masquerCommentaire, publierCommentaire, supprimerCommentaire, gererNotifications,
+                    gererNewsletter, gererParametres
             )));
             roleRepository.save(webmaster);
 
             // RÔLE ADMIN
             Role admin = roleRepository.findByName("ADMIN").orElseGet(() -> new Role("ADMIN"));
             admin.setPermissions(new HashSet<>(Arrays.asList(
-                    consulterActualites, creerComptes, attribuerRoles, consulterCategories, desactiverComptes
+                    consulterActualites, creerComptes, attribuerRoles, consulterCategories, desactiverComptes, suivreStats
             )));
             roleRepository.save(admin);
 
             System.out.println(">>> Synchronisation terminée avec succès !");
+
+            // 3. Premier administrateur : POST /api/utilisateurs est réservé à l'admin,
+            // il faut donc au moins un admin pour créer les autres comptes.
+            if (utilisateurRepository.findByRoles_Name("ADMIN").isEmpty()) {
+                Administrateur premierAdmin = new Administrateur();
+                premierAdmin.setNom("Administrateur");
+                premierAdmin.setPrenom("Principal");
+                premierAdmin.setEmail(adminEmail);
+                premierAdmin.setMotDePasse(adminPassword);
+                utilisateurService.creerUtilisateur(premierAdmin);
+                System.out.println(">>> Compte administrateur créé : " + adminEmail + " (changez le mot de passe !)");
+            }
+
+            // 4. Paramètres du footer par défaut
+            parametreSiteService.obtenirParametres();
         };
     }
 

@@ -34,3 +34,6 @@ build/
 
 ### Configuration locale et sensible ###
 /src/main/resources/application.properties
+
+### Images televersees ###
+/uploads/

@@ -4,20 +4,18 @@ import com.depeche.infos.dto.CommentaireRequestDTO;
 import com.depeche.infos.dto.CommentaireResponseDTO;
 import com.depeche.infos.entity.Commentaire;
 import com.depeche.infos.entity.Utilisateur;
+import com.depeche.infos.enums.StatutCommentaire;
 import com.depeche.infos.exception.RessourceIntrouvableException;
 import com.depeche.infos.mapper.CommentaireMapper;
 import com.depeche.infos.repository.UtilisateurRepository;
+import com.depeche.infos.security.UtilisateurConnecte;
 import com.depeche.infos.service.CommentaireService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/commentaires")
@@ -35,45 +33,46 @@ public class CommentaireController {
 
     // POST /api/commentaires?articleId=1
     // On récupère l'auteur depuis le Token
-
     @PreAuthorize("hasAuthority('COMMENTAIRE_ECRIRE')")
     @PostMapping
     public ResponseEntity<CommentaireResponseDTO> ajouterCommentaire(
             @Valid @RequestBody CommentaireRequestDTO request,
             @RequestParam Long articleId) {
 
-        // 1. On récupère l'email de la personne connectée
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String emailConnecte = userDetails.getUsername();
-
-        // 2. On cherche l'utilisateur en base
-        Utilisateur auteur = utilisateurRepository.findByEmail(emailConnecte)
+        Utilisateur auteur = utilisateurRepository.findByEmail(UtilisateurConnecte.email())
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur non trouvé"));
 
-        // 3. On crée le commentaire
         Commentaire commentaire = commentaireMapper.toEntity(request);
         Commentaire nouveauCommentaire = commentaireService.ajouterCommentaire(commentaire, auteur.getId(), articleId);
 
         return ResponseEntity.status(201).body(commentaireMapper.toResponseDTO(nouveauCommentaire));
     }
 
-    // GET /api/commentaires/article/1
+    // GET /api/commentaires/article/1 : PUBLIC, uniquement les commentaires publiés
     @GetMapping("/article/{articleId}")
     public ResponseEntity<List<CommentaireResponseDTO>> listerCommentairesParArticle(@PathVariable Long articleId) {
-        List<Commentaire> commentaires = commentaireService.listerCommentairesParArticle(articleId);
-        List<CommentaireResponseDTO> dtos = commentaires.stream()
-                .map(commentaireMapper::toResponseDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok(versDTOs(commentaireService.listerCommentairesParArticle(articleId)));
+    }
+
+    // GET /api/commentaires/mes-articles : commentaires reçus sur mes articles (Journaliste)
+    @PreAuthorize("hasAuthority('ARTICLE_ECRIRE')")
+    @GetMapping("/mes-articles")
+    public ResponseEntity<List<CommentaireResponseDTO>> listerCommentairesSurMesArticles() {
+        return ResponseEntity.ok(versDTOs(commentaireService.listerCommentairesSurMesArticles(UtilisateurConnecte.email())));
     }
 
     // PATCH /api/commentaires/1/masquer
     @PreAuthorize("hasAuthority('COMMENTAIRE_MASQUER')")
     @PatchMapping("/{id}/masquer")
     public ResponseEntity<CommentaireResponseDTO> masquerCommentaire(@PathVariable Long id) {
-        Commentaire commentaireMasque = commentaireService.masquerCommentaire(id);
-        return ResponseEntity.ok(commentaireMapper.toResponseDTO(commentaireMasque));
+        return ResponseEntity.ok(commentaireMapper.toResponseDTO(commentaireService.masquerCommentaire(id)));
+    }
+
+    // PATCH /api/commentaires/1/publier : rendre à nouveau visible un commentaire masqué
+    @PreAuthorize("hasAuthority('COMMENTAIRE_PUBLIER')")
+    @PatchMapping("/{id}/publier")
+    public ResponseEntity<CommentaireResponseDTO> publierCommentaire(@PathVariable Long id) {
+        return ResponseEntity.ok(commentaireMapper.toResponseDTO(commentaireService.publierCommentaire(id)));
     }
 
     // DELETE /api/commentaires/1
@@ -84,13 +83,16 @@ public class CommentaireController {
         return ResponseEntity.noContent().build();
     }
 
-    // GET /api/commentaires
+    // GET /api/commentaires?statut=MASQUE : modération (Webmaster)
+    // Correction : réservé aux modérateurs (avant, n'importe quel connecté voyait les commentaires masqués)
+    @PreAuthorize("hasAuthority('COMMENTAIRE_MASQUER')")
     @GetMapping
-    public ResponseEntity<List<CommentaireResponseDTO>> listerTousLesCommentaires() {
-        List<Commentaire> commentaires = commentaireService.listerTousLesCommentaires();
-        List<CommentaireResponseDTO> dtos = commentaires.stream()
-                .map(commentaireMapper::toResponseDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+    public ResponseEntity<List<CommentaireResponseDTO>> listerTousLesCommentaires(
+            @RequestParam(required = false) StatutCommentaire statut) {
+        return ResponseEntity.ok(versDTOs(commentaireService.listerTousLesCommentaires(statut)));
+    }
+
+    private List<CommentaireResponseDTO> versDTOs(List<Commentaire> commentaires) {
+        return commentaires.stream().map(commentaireMapper::toResponseDTO).toList();
     }
 }

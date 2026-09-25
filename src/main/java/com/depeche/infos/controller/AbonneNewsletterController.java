@@ -20,26 +20,30 @@ public class AbonneNewsletterController {
         this.abonneService = abonneService;
     }
 
-    // POST /api/newsletter/abonner :Public (n'importe qui peut s'abonner)
-    @PreAuthorize("permitAll()")
+    // POST /api/newsletter/abonner : Public (n'importe qui peut s'abonner)
+    // Correction : la route est maintenant réellement publique dans SecurityConfig
+    // (@PreAuthorize("permitAll()") ne suffisait pas : anyRequest().authenticated() bloquait avant)
     @PostMapping("/abonner")
     public ResponseEntity<AbonneNewsletter> abonner(@Valid @RequestBody AbonneNewsletterDTO request) {
         AbonneNewsletter nouvelAbonne = abonneService.abonner(request.getEmail());
         return ResponseEntity.status(201).body(nouvelAbonne);
     }
 
-    // POST /api/newsletter/desabonner : Public
-    @PreAuthorize("permitAll()")
+    // POST /api/newsletter/desabonner?email=... : Public (lien de désabonnement) et Webmaster
     @PostMapping("/desabonner")
     public ResponseEntity<Void> desabonner(@RequestParam String email) {
         abonneService.desabonner(email);
         return ResponseEntity.noContent().build();
     }
 
-    // GET /api/newsletter : Réservé à l'Admin (pour envoyer la newsletter)
-    @PreAuthorize("hasAuthority('NEWSLETTER_ABONNER')") // Seul l'admin a cette permission dans ton DataInitializer
+    // GET /api/newsletter?actifsSeulement=true : liste des abonnés (Webmaster)
+    // Correction : exigeait NEWSLETTER_ABONNER, que seul le LECTEUR possédait.
+    // La nouvelle permission NEWSLETTER_GERER est donnée au WEBMASTER.
+    @PreAuthorize("hasAuthority('NEWSLETTER_GERER')")
     @GetMapping
-    public ResponseEntity<List<AbonneNewsletter>> listerAbonnesActifs() {
-        return ResponseEntity.ok(abonneService.listerAbonnesActifs());
+    public ResponseEntity<List<AbonneNewsletter>> listerAbonnes(@RequestParam(defaultValue = "false") boolean actifsSeulement) {
+        return ResponseEntity.ok(actifsSeulement
+                ? abonneService.listerAbonnesActifs()
+                : abonneService.listerTousLesAbonnes());
     }
 }

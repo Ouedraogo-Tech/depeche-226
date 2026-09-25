@@ -17,6 +17,11 @@ public interface AbonneNewsletterRepository extends JpaRepository<AbonneNewslett
     boolean existsByEmail(String email);
 
     // 3. Récupérer tous les abonnés actifs ou inactifs
-    // (utile pour l'administrateur qui veut voir la liste des abonnés)
     List<AbonneNewsletter> findByActif(boolean actif);
+
+    // 4. Tous les abonnés, les plus récents en premier (liste du Webmaster)
+    List<AbonneNewsletter> findAllByOrderByDateAbonnementDesc();
+
+    // 5. Statistiques
+    long countByActif(boolean actif);
 }

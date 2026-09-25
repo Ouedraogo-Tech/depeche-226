@@ -73,28 +73,16 @@ http://localhost:8080/swagger-ui.html (selon le port disponible sur votre serveu
 Vous pouvez tester toutes les routes directement depuis ce navigateur. Cliquez sur le bouton Authorize pour insérer un Token JWT.
 Exemple d'utilisation (Workflow classique)
 
-    Créer un compte Admin :
-    POST /api/utilisateurs
-    json
-     
-      
-     
-     
-    {
-      "nom": "Admin", "prenom": "Super", "email": "admin@depeche.com",
-      "motDePasse": "admin123", "typeUtilisateur": "ROLE_ADMIN"
-    }
-     
-     
+    Premier compte Admin :
+    Créé AUTOMATIQUEMENT au démarrage si aucun ADMIN n'existe en base
+    (identifiants : app.admin.email / app.admin.password dans application.properties,
+    par défaut admin@depeche226.bf / Admin@2026 — à changer !).
+    POST /api/utilisateurs est réservé à l'admin (il n'est plus public).
 
     Se connecter pour obtenir le Token :
     POST /api/auth/login
     json
-     
-      
-     
-     
-    { "email": "admin@depeche.com", "motDePasse": "admin123" }
+    { "email": "admin@depeche226.bf", "motDePasse": "Admin@2026" }
      
      
 
@@ -121,10 +109,68 @@ Matrice des Droits (RBAC)
 Acteur
 
 Droits principaux
-Admin	Créer, suspendre des comptes
-Journaliste	Rédiger, modifier, publier des articles (workflow solo)
-Resp. Éditorial	Publier, planifier, archiver les articles soumis
-Webmaster	Modérer (masquer/supprimer) les commentaires
+Admin	Créer, modifier, suspendre des comptes, attribuer les rôles, statistiques
+Journaliste	Rédiger, modifier, soumettre, publier, planifier SES articles
+Resp. Éditorial	Valider / demander une modification / refuser les articles soumis, gérer les catégories, statistiques
+Webmaster	Modérer les commentaires, gérer la newsletter et les paramètres du footer, statistiques
+Lecteur	S'inscrire, commenter les articles publiés
+
+
+Le token JWT contient : sub (email), id, nom, prenom, roles, permissions, exp.
+Toutes les erreurs ont le format : { "erreur": "...", "message": "..." }
+(400 données invalides, 401 non connecté / token expiré, 403 droits insuffisants,
+404 introuvable, 409 opération impossible dans l'état actuel).
+
+Workflow d'un article :
+BROUILLON -> SOUMIS -> PUBLIE | A_REVISER | REFUSE ;  A_REVISER -> SOUMIS ;
+PLANIFIE -> PUBLIE (automatique, vérifié chaque minute) ;  PUBLIE -> ARCHIVE
+
+
+5. Liste des endpoints
+
+PUBLIC (sans token)
+    POST   /api/auth/login                        Connexion -> { token }
+    POST   /api/auth/inscription                  Inscription d'un LECTEUR
+    GET    /api/articles/publies?categorieId=&recherche=   Articles publiés
+    GET    /api/articles/publies/{id}             Un article publié
+    GET    /api/categories  |  /api/categories/{id}
+    GET    /api/commentaires/article/{articleId}  Commentaires publiés d'un article
+    GET    /api/parametres                        Paramètres du footer
+    POST   /api/newsletter/abonner                { email }
+    POST   /api/newsletter/desabonner?email=
+    GET    /uploads/{fichier}                     Images des articles
+
+TOUT UTILISATEUR CONNECTÉ
+    GET    /api/utilisateurs/moi  |  PUT /api/utilisateurs/moi   Mon profil
+    GET    /api/notifications                     Mes notifications
+    GET    /api/notifications/non-lues            { nombre }
+    PATCH  /api/notifications/{id}/lue  |  PATCH /api/notifications/lire-tout
+
+ARTICLES (back-office)
+    GET    /api/articles?statut=SOUMIS            Tous les articles (RE, Admin, Webmaster)
+    GET    /api/articles/moi                      Mes articles (Journaliste, RE)
+    GET    /api/articles/{id}
+    POST   /api/articles                          Créer (statut BROUILLON)
+    PUT    /api/articles/{id}  |  DELETE /api/articles/{id}   (auteur ou RE)
+    PATCH  /api/articles/{id}/brouillon | soumettre | publier | archiver
+    PATCH  /api/articles/{id}/planifier?date=2026-10-01T08:00:00
+    PATCH  /api/articles/{id}/valider | demander-modification | refuser   { commentaire } (RE)
+    POST   /api/medias  (multipart, champ "fichier")  -> { url }  Image JPG/PNG/WEBP, 5 Mo max
+
+CATÉGORIES (RE)          POST /api/categories, PUT/DELETE /api/categories/{id}
+COMMENTAIRES
+    POST   /api/commentaires?articleId=           Lecteur
+    GET    /api/commentaires/mes-articles         Journaliste
+    GET    /api/commentaires?statut=              Webmaster
+    PATCH  /api/commentaires/{id}/masquer | publier ,  DELETE /api/commentaires/{id}   Webmaster
+NEWSLETTER (Webmaster)   GET /api/newsletter?actifsSeulement=true
+PARAMÈTRES (Webmaster)   PUT /api/parametres
+STATISTIQUES             GET /api/statistiques      (Admin, RE, Webmaster)
+UTILISATEURS (Admin)
+    GET/POST /api/utilisateurs ,  PUT /api/utilisateurs/{id}
+    PATCH  /api/utilisateurs/{id}/suspendre | activer
+    PATCH  /api/utilisateurs/{id}/role?role=JOURNALISTE
+    GET    /api/roles                             Rôles et permissions
 
 
 Standards de code :

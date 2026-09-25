@@ -36,14 +36,17 @@ public class AuthService {
     }
 
     public AuthResponseDTO login(AuthRequestDTO request) {
+        // Correction : les emails sont enregistrés en minuscules (voir UtilisateurService.creerUtilisateur)
+        String email = request.getEmail().trim().toLowerCase();
+
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getMotDePasse())
+                new UsernamePasswordAuthenticationToken(email, request.getMotDePasse())
         );
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
         // On recharge l'entité Utilisateur pour accéder à ses rôles ET permissions
         // (UserDetails.getAuthorities() ne contient que les permissions, cf. UtilisateurUserDetailsService)
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(request.getEmail())
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow();
 
         List<String> roles = utilisateur.getRoles().stream()
@@ -59,6 +62,10 @@ public class AuthService {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("roles", roles);
         extraClaims.put("permissions", permissions);
+        // Ajout : le frontend peut afficher "Bienvenue, Prénom Nom" sans appel supplémentaire
+        extraClaims.put("id", utilisateur.getId());
+        extraClaims.put("nom", utilisateur.getNom());
+        extraClaims.put("prenom", utilisateur.getPrenom());
 
         String jwtToken = jwtService.generateToken(extraClaims, userDetails);
         return new AuthResponseDTO(jwtToken);

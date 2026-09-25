@@ -2,6 +2,7 @@ package com.depeche.infos.service;
 
 import com.depeche.infos.dto.CategorieRequestDTO;
 import com.depeche.infos.entity.Categorie;
+import com.depeche.infos.repository.ArticleRepository;
 import com.depeche.infos.repository.CategorieRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,8 @@ class CategorieServiceTest {
 
     @Mock
     private CategorieRepository categorieRepository;
+    @Mock
+    private ArticleRepository articleRepository;
 
     @InjectMocks
     private CategorieService categorieService;

@@ -26,6 +26,8 @@ class CommentaireServiceTest {
     private ArticleRepository articleRepository;
     @Mock
     private UtilisateurRepository utilisateurRepository;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private CommentaireService commentaireService;
