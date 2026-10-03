@@ -33,6 +33,9 @@ public abstract class Utilisateur {
 
     private String telephone;
 
+    // Photo de profil : adresse renvoyée par POST /api/medias (ex : "/uploads/xxxx.jpg"), null si aucune
+    private String photo;
+
     private LocalDateTime dateInscription;
 
     // Un utilisateur a plusieurs rôles.

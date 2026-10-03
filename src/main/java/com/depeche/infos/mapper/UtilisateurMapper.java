@@ -67,6 +67,7 @@ public class UtilisateurMapper {
         dto.setPrenom(utilisateur.getPrenom());
         dto.setEmail(utilisateur.getEmail());
         dto.setTelephone(utilisateur.getTelephone());
+        dto.setPhoto(utilisateur.getPhoto());
         dto.setActif(utilisateur.isActif());
         dto.setDateInscription(utilisateur.getDateInscription());
 

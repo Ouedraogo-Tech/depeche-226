@@ -6,6 +6,7 @@ import com.depeche.infos.entity.Role;
 import com.depeche.infos.repository.PermissionRepository;
 import com.depeche.infos.repository.RoleRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
+import com.depeche.infos.service.AbonneNewsletterService;
 import com.depeche.infos.service.ParametreSiteService;
 import com.depeche.infos.service.UtilisateurService;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,17 +22,19 @@ import java.util.HashSet;
 public class DataInitializer {
 
     // Compte administrateur créé au premier démarrage (si aucun ADMIN n'existe).
-    // À personnaliser dans application.properties.
-    @Value("${app.admin.email:admin@depeche226.bf}")
+    // AUCUNE valeur par défaut dans le code : l'e-mail et le mot de passe viennent UNIQUEMENT
+    // de application.properties (fichier non envoyé sur GitHub).
+    @Value("${app.admin.email:}")
     private String adminEmail;
 
-    @Value("${app.admin.password:Admin@2026}")
+    @Value("${app.admin.password:}")
     private String adminPassword;
 
     @Bean
     CommandLineRunner initDatabase(RoleRepository roleRepository, PermissionRepository permissionRepository,
                                    UtilisateurRepository utilisateurRepository, UtilisateurService utilisateurService,
-                                   ParametreSiteService parametreSiteService, JdbcTemplate jdbcTemplate) {
+                                   ParametreSiteService parametreSiteService, JdbcTemplate jdbcTemplate,
+                                   AbonneNewsletterService abonneNewsletterService) {
         return args -> {
             // 0. Correction : Hibernate a créé une contrainte CHECK sur article.statut avec l'ANCIENNE liste
             // de statuts. Elle bloquerait les nouveaux statuts (A_REVISER, REFUSE) : on la supprime.
@@ -131,7 +134,11 @@ public class DataInitializer {
 
             // 3. Premier administrateur : POST /api/utilisateurs est réservé à l'admin,
             // il faut donc au moins un admin pour créer les autres comptes.
-            if (utilisateurRepository.findByRoles_Name("ADMIN").isEmpty()) {
+            if (utilisateurRepository.findByRoles_Name("ADMIN").isEmpty()
+                    && (adminEmail.isBlank() || adminPassword.isBlank())) {
+                System.out.println(">>> ATTENTION : aucun administrateur. Renseignez app.admin.email et "
+                        + "app.admin.password dans application.properties, puis redémarrez.");
+            } else if (utilisateurRepository.findByRoles_Name("ADMIN").isEmpty()) {
                 Administrateur premierAdmin = new Administrateur();
                 premierAdmin.setNom("Administrateur");
                 premierAdmin.setPrenom("Principal");
@@ -143,6 +150,9 @@ public class DataInitializer {
 
             // 4. Paramètres du footer par défaut
             parametreSiteService.obtenirParametres();
+
+            // 5. Newsletter : les abonnés créés avant l'ajout du jeton en reçoivent un
+            abonneNewsletterService.attribuerJetonsManquants();
         };
     }
 

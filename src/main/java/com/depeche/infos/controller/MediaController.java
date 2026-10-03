@@ -23,8 +23,9 @@ public class MediaController {
     }
 
     // POST /api/medias (multipart/form-data, champ "fichier") -> { "url": "/uploads/xxxx.jpg" }
-    // L'URL renvoyée se met ensuite dans le champ "image" de l'article.
-    @PreAuthorize("hasAuthority('ARTICLE_ECRIRE')")
+    // L'URL renvoyée se met ensuite dans le champ "image" de l'article, ou "photo" du profil.
+    // Tout utilisateur connecté peut envoyer une image (photo de profil) ; seules les images JPG/PNG/WEBP de 5 Mo max sont acceptées.
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> televerserImage(@RequestParam("fichier") MultipartFile fichier) {
         return ResponseEntity.status(201).body(Map.of("url", mediaService.enregistrerImage(fichier)));

@@ -13,6 +13,7 @@ public class ArticleResponseDTO {
     private String resume;
     private String contenu;
     private String image;
+    private String lienVideo; // lien YouTube, ou null
     private StatutArticle statut;
     private String commentaireEditorial;
     private LocalDateTime dateCreation;

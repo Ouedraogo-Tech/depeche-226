@@ -23,4 +23,11 @@ public class UtilisateurModificationDTO {
     // Facultatif : vide = on garde l'ancien mot de passe
     @Size(min = 6, message = "Le mot de passe doit contenir au moins 6 caractères")
     private String motDePasse;
+
+    // Photo de profil (facultatif) :
+    //   absente (null) = on garde la photo actuelle
+    //   ""             = on retire la photo
+    //   "/uploads/..." = nouvelle photo (adresse renvoyée par POST /api/medias)
+    @Size(max = 255, message = "Adresse de photo trop longue")
+    private String photo;
 }

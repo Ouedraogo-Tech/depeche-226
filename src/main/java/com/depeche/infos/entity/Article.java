@@ -31,6 +31,9 @@ public class Article {
 
     private String image;
 
+    // Lien de la vidéo YouTube qui accompagne l'article (facultatif) : la vidéo reste sur YouTube
+    private String lienVideo;
+
     private LocalDateTime dateCreation;
 
     private LocalDateTime datePublication;

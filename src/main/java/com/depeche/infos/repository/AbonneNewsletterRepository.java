@@ -24,4 +24,10 @@ public interface AbonneNewsletterRepository extends JpaRepository<AbonneNewslett
 
     // 5. Statistiques
     long countByActif(boolean actif);
+
+    // 6. Lien "Se désabonner" d'un e-mail : l'abonné est retrouvé par son jeton secret
+    Optional<AbonneNewsletter> findByJeton(String jeton);
+
+    // 7. Abonnés créés avant l'ajout du jeton (ils en reçoivent un au démarrage)
+    List<AbonneNewsletter> findByJetonIsNull();
 }

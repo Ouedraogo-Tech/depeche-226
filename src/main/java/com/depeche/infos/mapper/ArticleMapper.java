@@ -17,6 +17,9 @@ public class ArticleMapper {
         article.setResume(requestDTO.getResume());
         article.setContenu(requestDTO.getContenu());
         article.setImage(requestDTO.getImage());
+        // "" (champ vidé) → null : l'article n'a plus de vidéo
+        String lien = requestDTO.getLienVideo();
+        article.setLienVideo(lien == null || lien.isBlank() ? null : lien.trim());
         return article;
     }
 
@@ -27,6 +30,7 @@ public class ArticleMapper {
         dto.setTitre(article.getTitre());
         dto.setResume(article.getResume());
         dto.setContenu(article.getContenu());
+        dto.setLienVideo(article.getLienVideo());
         dto.setImage(article.getImage());
         dto.setStatut(article.getStatut());
         dto.setCommentaireEditorial(article.getCommentaireEditorial());

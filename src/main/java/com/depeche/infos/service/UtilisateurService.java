@@ -146,6 +146,11 @@ public class UtilisateurService {
         if (modification.getMotDePasse() != null && !modification.getMotDePasse().isBlank()) {
             utilisateur.setMotDePasse(passwordEncoder.encode(modification.getMotDePasse()));
         }
+
+        // Photo de profil : null = inchangée, "" = retirée, sinon nouvelle adresse
+        if (modification.getPhoto() != null) {
+            utilisateur.setPhoto(modification.getPhoto().isBlank() ? null : modification.getPhoto().trim());
+        }
         return utilisateurRepository.save(utilisateur);
     }
 }

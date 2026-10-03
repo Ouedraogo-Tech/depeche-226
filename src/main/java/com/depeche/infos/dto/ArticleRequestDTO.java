@@ -2,6 +2,7 @@ package com.depeche.infos.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +27,14 @@ public class ArticleRequestDTO {
 
     // L'image n'est pas obligatoire : c'est l'URL renvoyée par POST /api/medias
     private String image;
+
+    // Vidéo YouTube (facultatif) : seuls les liens youtube.com/watch, youtu.be et youtube.com/shorts sont acceptés
+    // (on refuse tout autre site, pour éviter les liens piégés). Vide = pas de vidéo.
+    @Size(max = 255, message = "Le lien de la vidéo est trop long")
+    @Pattern(
+            regexp = "^$|^https://(www\\.|m\\.)?(youtube\\.com/(watch\\?v=|shorts/)|youtu\\.be/)[A-Za-z0-9_-]{11}([?&#].*)?$",
+            message = "Le lien de la vidéo doit être un lien YouTube (ex. : https://www.youtube.com/watch?v=… ou https://youtu.be/…)")
+    private String lienVideo;
 
     // @NotNull : L'ID de la catégorie doit être fourni (il ne peut pas être null)
     @NotNull(message = "La catégorie est obligatoire")

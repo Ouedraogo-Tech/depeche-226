@@ -14,6 +14,8 @@ public class UtilisateurResponseDTO {
     private String prenom;
     private String email;
     private String telephone;
+    // Photo de profil (null si aucune : le frontend affiche alors les initiales)
+    private String photo;
     private Set<String> roles;
     // Ajout : nécessaire pour afficher "Actif / Désactivé" dans l'espace Administrateur
     private boolean actif;

@@ -1,6 +1,8 @@
 package com.depeche.infos.controller;
 
 import com.depeche.infos.dto.AbonneNewsletterDTO;
+import com.depeche.infos.dto.EnvoiNewsletterDTO;
+import com.depeche.infos.dto.ResultatEnvoiDTO;
 import com.depeche.infos.entity.AbonneNewsletter;
 import com.depeche.infos.service.AbonneNewsletterService;
 import jakarta.validation.Valid;
@@ -29,11 +31,29 @@ public class AbonneNewsletterController {
         return ResponseEntity.status(201).body(nouvelAbonne);
     }
 
-    // POST /api/newsletter/desabonner?email=... : Public (lien de désabonnement) et Webmaster
+    // POST /api/newsletter/desabonner?jeton=... : PUBLIC (lien "Se désabonner" des e-mails)
+    // Correction de sécurité : on désabonne avec le JETON secret reçu par e-mail, plus avec l'adresse
+    // (avant, n'importe qui pouvait désabonner n'importe quelle adresse).
     @PostMapping("/desabonner")
-    public ResponseEntity<Void> desabonner(@RequestParam String email) {
-        abonneService.desabonner(email);
+    public ResponseEntity<Void> desabonner(@RequestParam String jeton) {
+        abonneService.desabonnerParJeton(jeton);
         return ResponseEntity.noContent().build();
+    }
+
+    // POST /api/newsletter/envoyer : le webmaster envoie les articles choisis aux abonnés choisis
+    // Corps : { "objet": "...", "abonneIds": [1, 4], "articleIds": [15, 14] }
+    // Réponse : { "envoyes": 2, "echecs": 0, "adressesEnEchec": [] }
+    @PreAuthorize("hasAuthority('NEWSLETTER_GERER')")
+    @PostMapping("/envoyer")
+    public ResponseEntity<ResultatEnvoiDTO> envoyer(@Valid @RequestBody EnvoiNewsletterDTO demande) {
+        return ResponseEntity.ok(abonneService.envoyerNewsletter(demande));
+    }
+
+    // PATCH /api/newsletter/5/desabonner : bouton "Désabonner" du webmaster
+    @PreAuthorize("hasAuthority('NEWSLETTER_GERER')")
+    @PatchMapping("/{id}/desabonner")
+    public ResponseEntity<AbonneNewsletter> desabonnerParId(@PathVariable Long id) {
+        return ResponseEntity.ok(abonneService.desabonnerParId(id));
     }
 
     // GET /api/newsletter?actifsSeulement=true : liste des abonnés (Webmaster)

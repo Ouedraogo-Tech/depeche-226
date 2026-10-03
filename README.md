@@ -75,14 +75,14 @@ Exemple d'utilisation (Workflow classique)
 
     Premier compte Admin :
     Créé AUTOMATIQUEMENT au démarrage si aucun ADMIN n'existe en base
-    (identifiants : app.admin.email / app.admin.password dans application.properties,
-    par défaut admin@depeche226.bf / Admin@2026 — à changer !).
+    (identifiants : app.admin.email / app.admin.password, à renseigner dans VOTRE
+    application.properties — aucun identifiant par défaut dans le code).
     POST /api/utilisateurs est réservé à l'admin (il n'est plus public).
 
     Se connecter pour obtenir le Token :
     POST /api/auth/login
     json
-    { "email": "admin@depeche226.bf", "motDePasse": "Admin@2026" }
+    { "email": "<app.admin.email>", "motDePasse": "<app.admin.password>" }
      
      
 

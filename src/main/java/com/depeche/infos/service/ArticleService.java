@@ -16,9 +16,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ArticleService {
@@ -60,12 +63,13 @@ public class ArticleService {
 
     // Site public : uniquement les articles PUBLIES, avec filtre facultatif par catégorie et mot-clé
     public List<Article> listerArticlesPublies(Long categorieId, String recherche) {
-        String motCle = (recherche == null) ? null : recherche.trim().toLowerCase();
+        // Recherche sans accents : "economie" trouve "Économie" (et inversement)
+        String motCle = (recherche == null) ? null : normaliser(recherche.trim());
         return articleRepository.findByStatutOrderByDatePublicationDesc(StatutArticle.PUBLIE).stream()
                 .filter(a -> categorieId == null || a.getCategorie().getId().equals(categorieId))
                 .filter(a -> motCle == null || motCle.isEmpty()
-                        || a.getTitre().toLowerCase().contains(motCle)
-                        || (a.getResume() != null && a.getResume().toLowerCase().contains(motCle)))
+                        || normaliser(a.getTitre()).contains(motCle)
+                        || (a.getResume() != null && normaliser(a.getResume()).contains(motCle)))
                 .toList();
     }
 
@@ -98,12 +102,14 @@ public class ArticleService {
     // ce qui faisait échouer toute modification. On la recharge maintenant depuis son id.
     public Article modifierArticle(Long id, Article articleModifie, Long categorieId, String emailConnecte) {
         Article articleExistant = trouverArticle(id);
-        verifierDroits(articleExistant, emailConnecte);
+        Utilisateur connecte = verifierDroits(articleExistant, emailConnecte);
+        verifierStatutModifiable(articleExistant, connecte, "modifié");
 
         articleExistant.setTitre(articleModifie.getTitre());
         articleExistant.setResume(articleModifie.getResume());
         articleExistant.setContenu(articleModifie.getContenu());
         articleExistant.setImage(articleModifie.getImage());
+        articleExistant.setLienVideo(articleModifie.getLienVideo());
         articleExistant.setCategorie(trouverCategorie(categorieId));
         return articleRepository.save(articleExistant);
     }
@@ -113,7 +119,8 @@ public class ArticleService {
     @Transactional
     public void supprimerArticle(Long id, String emailConnecte) {
         Article article = trouverArticle(id);
-        verifierDroits(article, emailConnecte);
+        Utilisateur connecte = verifierDroits(article, emailConnecte);
+        verifierStatutModifiable(article, connecte, "supprimé");
         commentaireRepository.deleteByArticle(article);
         articleRepository.delete(article);
     }
@@ -268,6 +275,26 @@ public class ArticleService {
             throw new ActionInterditeException("Vous ne pouvez agir que sur vos propres articles.");
         }
         return connecte;
+    }
+
+    // Statuts dans lesquels un journaliste peut modifier ou supprimer son article
+    // (même règle que STATUTS_MODIFIABLES côté Angular). En relecture (SOUMIS), PLANIFIE ou ARCHIVE : refusé.
+    private static final Set<StatutArticle> STATUTS_MODIFIABLES =
+            EnumSet.of(StatutArticle.BROUILLON, StatutArticle.A_REVISER, StatutArticle.REFUSE, StatutArticle.PUBLIE);
+
+    // Le responsable éditorial n'est pas limité ; le journaliste, si.
+    private void verifierStatutModifiable(Article article, Utilisateur connecte, String action) {
+        boolean estResponsable = connecte.getRoles().stream()
+                .anyMatch(role -> ROLE_RESPONSABLE.equals(role.getName()));
+        if (!estResponsable && !STATUTS_MODIFIABLES.contains(article.getStatut())) {
+            throw new IllegalStateException("Cet article ne peut pas être " + action
+                    + " : il est en relecture, planifié ou archivé.");
+        }
+    }
+
+    // Recherche sans accents ni majuscules : "Économie" → "economie"
+    private static String normaliser(String texte) {
+        return Normalizer.normalize(texte, Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase();
     }
 
     private boolean estAuteur(Article article, Utilisateur utilisateur) {
