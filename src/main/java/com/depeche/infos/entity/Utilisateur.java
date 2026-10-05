@@ -53,4 +53,10 @@ public abstract class Utilisateur {
     @Column(nullable = false)
     private boolean actif = true;
 
+    // "Mot de passe oublié" (lecteurs et administrateurs uniquement) :
+    // EMPREINTE (SHA-256) du jeton envoyé par e-mail — jamais le jeton lui-même —, et sa date d'expiration.
+    @Column(length = 64)
+    private String jetonReinitialisation;
+
+    private LocalDateTime expirationReinitialisation;
 }

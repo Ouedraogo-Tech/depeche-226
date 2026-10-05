@@ -37,5 +37,19 @@ public class ParametreSite {
     // Ligne affichée en bas du footer (ex : "Édité à Ouagadougou · ISSN 2226-0226")
     private String mentionEdition;
 
+    // Réseaux sociaux : liens affichés sous forme de logos dans le footer (vide = logo caché)
+    private String lienFacebook;
+    private String lienYoutube;
+    private String lienWhatsapp;
+    private String lienInstagram;
+    private String lienLinkedin;
+
+    // Pages légales : textes saisis par le webmaster, affichés sur /mentions-legales et /confidentialite
+    @Column(columnDefinition = "TEXT")
+    private String mentionsLegales;
+
+    @Column(columnDefinition = "TEXT")
+    private String politiqueConfidentialite;
+
     private LocalDateTime dateMiseAJour;
 }

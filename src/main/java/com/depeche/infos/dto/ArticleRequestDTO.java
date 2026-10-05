@@ -12,9 +12,9 @@ import lombok.Setter;
 public class ArticleRequestDTO {
 
     // @NotBlank : Le titre ne peut pas être null ni vide (pas d'espaces uniquement)
-    // @Size : la maquette limite le titre à 90 caractères
+    // @Size : 150 caractères maximum (la colonne "titre" en accepte 255)
     @NotBlank(message = "Le titre est obligatoire")
-    @Size(max = 90, message = "Le titre ne doit pas dépasser 90 caractères")
+    @Size(max = 150, message = "Le titre ne doit pas dépasser 150 caractères")
     private String titre;
 
     // Chapeau affiché sur la page d'accueil (facultatif)

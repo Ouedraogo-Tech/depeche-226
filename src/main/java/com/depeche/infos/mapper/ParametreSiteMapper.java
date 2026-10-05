@@ -17,6 +17,13 @@ public class ParametreSiteMapper {
         dto.setAdresse(parametre.getAdresse());
         dto.setVille(parametre.getVille());
         dto.setMentionEdition(parametre.getMentionEdition());
+        dto.setLienFacebook(parametre.getLienFacebook());
+        dto.setLienYoutube(parametre.getLienYoutube());
+        dto.setLienWhatsapp(parametre.getLienWhatsapp());
+        dto.setLienInstagram(parametre.getLienInstagram());
+        dto.setLienLinkedin(parametre.getLienLinkedin());
+        dto.setMentionsLegales(parametre.getMentionsLegales());
+        dto.setPolitiqueConfidentialite(parametre.getPolitiqueConfidentialite());
         dto.setDateMiseAJour(parametre.getDateMiseAJour());
         return dto;
     }
@@ -30,5 +37,17 @@ public class ParametreSiteMapper {
         parametre.setAdresse(dto.getAdresse());
         parametre.setVille(dto.getVille());
         parametre.setMentionEdition(dto.getMentionEdition());
+        parametre.setLienFacebook(vide(dto.getLienFacebook()));
+        parametre.setLienYoutube(vide(dto.getLienYoutube()));
+        parametre.setLienWhatsapp(vide(dto.getLienWhatsapp()));
+        parametre.setLienInstagram(vide(dto.getLienInstagram()));
+        parametre.setLienLinkedin(vide(dto.getLienLinkedin()));
+        parametre.setMentionsLegales(vide(dto.getMentionsLegales()));
+        parametre.setPolitiqueConfidentialite(vide(dto.getPolitiqueConfidentialite()));
+    }
+
+    // "" ou espaces → null (le footer cache simplement le logo / le lien)
+    private static String vide(String valeur) {
+        return (valeur == null || valeur.isBlank()) ? null : valeur.trim();
     }
 }

@@ -62,6 +62,41 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    // "Mot de passe oublié" : e-mail avec le lien de réinitialisation (valable 30 minutes)
+    public void envoyerReinitialisation(String email, String prenom, String jeton)
+            throws MessagingException, UnsupportedEncodingException {
+        String lien = urlSite + "/reinitialiser-mot-de-passe?jeton=" + jeton;
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setFrom(expediteur, nomExpediteur);
+        helper.setTo(email);
+        helper.setSubject("Réinitialisation de votre mot de passe");
+
+        String texte = "Bonjour " + prenom + ",\n\n"
+                + "Vous avez demandé à changer votre mot de passe. Ouvrez ce lien (valable 30 minutes) :\n"
+                + lien + "\n\n"
+                + "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe ne change pas.\n";
+
+        String html = "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\"></head>"
+                + "<body style=\"margin:0;padding:24px 12px;background:" + CREME + ";font-family:Arial,Helvetica,sans-serif;color:" + MARINE + ";\">"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\">"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:520px;background:#ffffff;border-top:6px solid " + BRIQUE + ";\">"
+                + "<tr><td style=\"padding:28px;\">"
+                + "<div style=\"font-family:Georgia,serif;font-size:22px;font-weight:bold;\">DÉPÊCHE 226</div>"
+                + "<p style=\"margin:20px 0 0;font-size:15px;line-height:1.5;\">Bonjour " + echapper(prenom) + ",</p>"
+                + "<p style=\"margin:10px 0 0;font-size:15px;line-height:1.5;\">Vous avez demandé à changer votre mot de passe. "
+                + "Cliquez sur le bouton ci-dessous pour en choisir un nouveau. Ce lien est valable <strong>30 minutes</strong>.</p>"
+                + "<a href=\"" + lien + "\" style=\"display:inline-block;margin-top:20px;padding:12px 22px;background:" + BRIQUE
+                + ";color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;border-radius:4px;\">Choisir un nouveau mot de passe</a>"
+                + "<p style=\"margin:24px 0 0;font-size:13px;line-height:1.5;color:#7a8396;\">Si vous n'êtes pas à l'origine de cette demande, "
+                + "ignorez cet e-mail : votre mot de passe ne change pas.</p>"
+                + "</td></tr></table></td></tr></table></body></html>";
+
+        helper.setText(texte, html);
+        mailSender.send(message);
+    }
+
     // ===== Version HTML (styles "en ligne" : les messageries ignorent les feuilles de style) =====
     private String construireHtml(String objet, List<Article> articles, String lienDesabonnement) {
         StringBuilder html = new StringBuilder();

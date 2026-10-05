@@ -28,4 +28,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     // 5. Statistiques : comptes actifs / désactivés
     long countByActif(boolean actif);
+
+    // 6. "Mot de passe oublié" : l'utilisateur est retrouvé par l'empreinte du jeton reçu par e-mail
+    Optional<Utilisateur> findByJetonReinitialisation(String empreinteJeton);
 }
