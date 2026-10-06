@@ -23,7 +23,7 @@ public class Article {
     private String titre;
 
     // Chapeau affiché sur la page d'accueil (facultatif)
-    @Column(length = 300)
+    @Column(length = 1000)
     private String resume;
 
     @Column(columnDefinition = "TEXT", nullable = false)
@@ -37,6 +37,10 @@ public class Article {
     private LocalDateTime dateCreation;
 
     private LocalDateTime datePublication;
+
+    // Date de mise en ligne demandée par le journaliste en soumettant l'article (null = dès la validation).
+    // Appliquée seulement si le responsable éditorial valide ; effacée en cas de refus ou de révision.
+    private LocalDateTime datePublicationSouhaitee;
 
     @Enumerated(EnumType.STRING) // Dit à Hibernate de stocker le mot "BROUILLON" dans la base
     @Column(nullable = false, length = 20)

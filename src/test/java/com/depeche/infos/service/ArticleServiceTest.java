@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -157,5 +158,76 @@ class ArticleServiceTest {
         when(articleRepository.findById(1L)).thenReturn(Optional.of(article(responsable, StatutArticle.BROUILLON)));
 
         assertThrows(IllegalStateException.class, () -> articleService.validerArticle(1L, null));
+    }
+
+    @Test
+    void publierArticle_QuandSoumis_DoitEtreRefuse() {
+        // Un article en relecture ne peut pas être publié directement (la validation serait contournée)
+        Utilisateur auteur = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(article(auteur, StatutArticle.SOUMIS)));
+        when(utilisateurRepository.findByEmail("auteur@test.bf")).thenReturn(Optional.of(auteur));
+
+        assertThrows(IllegalStateException.class, () -> articleService.publierArticle(1L, "auteur@test.bf"));
+        assertThrows(IllegalStateException.class,
+                () -> articleService.planifierArticle(1L, LocalDateTime.now().plusHours(1), "auteur@test.bf"));
+        verify(articleRepository, never()).save(any());
+    }
+
+    @Test
+    void soumettreArticle_QuandRefuse_DoitEtrePossible() {
+        // Un article refusé peut être corrigé puis resoumis
+        Utilisateur auteur = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(article(auteur, StatutArticle.REFUSE)));
+        when(utilisateurRepository.findByEmail("auteur@test.bf")).thenReturn(Optional.of(auteur));
+        when(articleRepository.save(any(Article.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LocalDateTime souhaitee = LocalDateTime.now().plusHours(2);
+        Article resultat = articleService.soumettreArticle(1L, souhaitee, "auteur@test.bf");
+
+        assertEquals(StatutArticle.SOUMIS, resultat.getStatut());
+        assertEquals(souhaitee, resultat.getDatePublicationSouhaitee());
+    }
+
+    @Test
+    void validerArticle_AvecDateSouhaiteeFuture_DoitPlanifierACetteDate() {
+        Utilisateur auteur = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        Article soumis = article(auteur, StatutArticle.SOUMIS);
+        LocalDateTime souhaitee = LocalDateTime.now().plusHours(1);
+        soumis.setDatePublicationSouhaitee(souhaitee);
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(soumis));
+        when(articleRepository.save(any(Article.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Article resultat = articleService.validerArticle(1L, null);
+
+        assertEquals(StatutArticle.PLANIFIE, resultat.getStatut());
+        assertEquals(souhaitee, resultat.getDatePublication());
+        assertNull(resultat.getDatePublicationSouhaitee());
+    }
+
+    @Test
+    void validerArticle_AvecDateSouhaiteePassee_DoitPublierToutDeSuite() {
+        Utilisateur auteur = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        Article soumis = article(auteur, StatutArticle.SOUMIS);
+        soumis.setDatePublicationSouhaitee(LocalDateTime.now().minusMinutes(5));
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(soumis));
+        when(articleRepository.save(any(Article.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Article resultat = articleService.validerArticle(1L, null);
+
+        assertEquals(StatutArticle.PUBLIE, resultat.getStatut());
+    }
+
+    @Test
+    void refuserArticle_DoitAnnulerLaDateSouhaitee() {
+        Utilisateur auteur = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        Article soumis = article(auteur, StatutArticle.SOUMIS);
+        soumis.setDatePublicationSouhaitee(LocalDateTime.now().plusHours(1));
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(soumis));
+        when(articleRepository.save(any(Article.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Article resultat = articleService.refuserArticle(1L, "Sources insuffisantes");
+
+        assertEquals(StatutArticle.REFUSE, resultat.getStatut());
+        assertNull(resultat.getDatePublicationSouhaitee());
     }
 }

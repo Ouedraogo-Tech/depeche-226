@@ -34,6 +34,7 @@ public class ArticleMapper {
         dto.setImage(article.getImage());
         dto.setStatut(article.getStatut());
         dto.setCommentaireEditorial(article.getCommentaireEditorial());
+        dto.setDatePublicationSouhaitee(article.getDatePublicationSouhaitee());
         dto.setDateCreation(article.getDateCreation());
         dto.setDatePublication(article.getDatePublication());
 
@@ -46,6 +47,18 @@ public class ArticleMapper {
             dto.setCategorieId(article.getCategorie().getId());
             dto.setCategorieNom(article.getCategorie().getNom());
         }
+        return dto;
+    }
+
+    // Version SITE PUBLIC : uniquement ce que le lecteur doit voir.
+    // Le statut, le commentaire du responsable éditorial et la date souhaitée restent dans la rédaction
+    // (ils n'apparaissent même pas dans les outils développeur F12).
+    public ArticleResponseDTO toPublicDTO(Article article) {
+        ArticleResponseDTO dto = toResponseDTO(article);
+        if (dto == null) return null;
+        dto.setStatut(null);
+        dto.setCommentaireEditorial(null);
+        dto.setDatePublicationSouhaitee(null);
         return dto;
     }
 }

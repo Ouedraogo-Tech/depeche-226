@@ -60,6 +60,19 @@ public class ParametreSiteDTO {
     @Size(max = 30000, message = "La politique de confidentialité est trop longue (30 000 caractères maximum)")
     private String politiqueConfidentialite;
 
+    // Logos : uniquement des images envoyées sur le site (POST /api/medias → "/uploads/…"), ou vide
+    @Size(max = 255, message = "L'adresse du logo est trop longue")
+    @Pattern(regexp = "^$|^/uploads/[A-Za-z0-9._-]+$", message = "Le logo doit être une image envoyée sur le site")
+    private String logo;
+
+    @Size(max = 255, message = "L'adresse du logo est trop longue")
+    @Pattern(regexp = "^$|^/uploads/[A-Za-z0-9._-]+$", message = "Le logo doit être une image envoyée sur le site")
+    private String logoBlanc;
+
+    @Size(max = 255, message = "L'adresse du logo est trop longue")
+    @Pattern(regexp = "^$|^/uploads/[A-Za-z0-9._-]+$", message = "Le logo doit être une image envoyée sur le site")
+    private String logoComplet;
+
     // Rempli par le serveur, ignoré en entrée
     private LocalDateTime dateMiseAJour;
 }

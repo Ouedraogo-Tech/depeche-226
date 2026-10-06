@@ -18,7 +18,7 @@ public class ArticleRequestDTO {
     private String titre;
 
     // Chapeau affiché sur la page d'accueil (facultatif)
-    @Size(max = 300, message = "Le résumé ne doit pas dépasser 300 caractères")
+    @Size(max = 1000, message = "Le résumé ne doit pas dépasser 1 000 caractères")
     private String resume;
 
     // @NotBlank : Le contenu est obligatoire

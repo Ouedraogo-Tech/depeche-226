@@ -41,13 +41,15 @@ public class ArticleController {
     public ResponseEntity<List<ArticleResponseDTO>> listerArticlesPublies(
             @RequestParam(required = false) Long categorieId,
             @RequestParam(required = false) String recherche) {
-        return ResponseEntity.ok(versDTOs(articleService.listerArticlesPublies(categorieId, recherche)));
+        // toPublicDTO : sans statut ni commentaire éditorial (informations internes)
+        return ResponseEntity.ok(articleService.listerArticlesPublies(categorieId, recherche).stream()
+                .map(articleMapper::toPublicDTO).toList());
     }
 
     // GET /api/articles/publies/1 : un article publié (404 s'il n'est pas publié)
     @GetMapping("/publies/{id}")
     public ResponseEntity<ArticleResponseDTO> obtenirArticlePublie(@PathVariable Long id) {
-        return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.trouverArticlePublie(id)));
+        return ResponseEntity.ok(articleMapper.toPublicDTO(articleService.trouverArticlePublie(id)));
     }
 
     // ==================== BACK-OFFICE ====================
@@ -118,9 +120,13 @@ public class ArticleController {
     }
 
     @PreAuthorize("hasAuthority('ARTICLE_SOUMETTRE')")
+    // PATCH /api/articles/1/soumettre  ou  /soumettre?date=2026-10-06T16:00:00 (date de publication souhaitée, facultative)
     @PatchMapping("/{id}/soumettre")
-    public ResponseEntity<ArticleResponseDTO> soumettreArticle(@PathVariable Long id) {
-        return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.soumettreArticle(id, UtilisateurConnecte.email())));
+    public ResponseEntity<ArticleResponseDTO> soumettreArticle(@PathVariable Long id,
+                                                               @RequestParam(required = false) String date) {
+        LocalDateTime souhaitee = (date == null || date.isBlank()) ? null : LocalDateTime.parse(date);
+        return ResponseEntity.ok(articleMapper.toResponseDTO(
+                articleService.soumettreArticle(id, souhaitee, UtilisateurConnecte.email())));
     }
 
     @PreAuthorize("hasAuthority('ARTICLE_PUBLIER')")

@@ -24,6 +24,9 @@ public class ParametreSiteMapper {
         dto.setLienLinkedin(parametre.getLienLinkedin());
         dto.setMentionsLegales(parametre.getMentionsLegales());
         dto.setPolitiqueConfidentialite(parametre.getPolitiqueConfidentialite());
+        dto.setLogo(parametre.getLogo());
+        dto.setLogoBlanc(parametre.getLogoBlanc());
+        dto.setLogoComplet(parametre.getLogoComplet());
         dto.setDateMiseAJour(parametre.getDateMiseAJour());
         return dto;
     }
@@ -44,6 +47,9 @@ public class ParametreSiteMapper {
         parametre.setLienLinkedin(vide(dto.getLienLinkedin()));
         parametre.setMentionsLegales(vide(dto.getMentionsLegales()));
         parametre.setPolitiqueConfidentialite(vide(dto.getPolitiqueConfidentialite()));
+        parametre.setLogo(vide(dto.getLogo()));
+        parametre.setLogoBlanc(vide(dto.getLogoBlanc()));
+        parametre.setLogoComplet(vide(dto.getLogoComplet()));
     }
 
     // "" ou espaces → null (le footer cache simplement le logo / le lien)

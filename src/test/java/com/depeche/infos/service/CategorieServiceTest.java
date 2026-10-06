@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -26,21 +28,38 @@ class CategorieServiceTest {
 
     @Test
     void creerCategorie_QuandNomExisteDeja_DoitLeverException() {
-        // ARRANGE
-        CategorieRequestDTO request = new CategorieRequestDTO();
-        request.setNom("Politique");
+        // ARRANGE : "Politique" existe déjà ; on essaie de créer " politique " (minuscules + espaces)
+        Categorie existante = new Categorie();
+        existante.setId(1L);
+        existante.setNom("Politique");
+        when(categorieRepository.findAll()).thenReturn(List.of(existante));
 
-        // On dit au faux repository de répondre "true" (la catégorie existe déjà)
-        when(categorieRepository.existsByNom("Politique")).thenReturn(true);
+        CategorieRequestDTO request = new CategorieRequestDTO();
+        request.setNom(" politique ");
 
         // ACT & ASSERT
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             categorieService.creerCategorie(request);
         });
 
-        assertEquals("Cette catégorie existe déjà !", exception.getMessage());
+        assertEquals("La catégorie « politique » existe déjà.", exception.getMessage());
 
         // On vérifie qu'on n'a jamais appelé save() car ça a planté
+        verify(categorieRepository, never()).save(any(Categorie.class));
+    }
+
+    @Test
+    void creerCategorie_QuandSeulsLesAccentsChangent_DoitLeverException() {
+        // "Économie" existe déjà ; "Economie" (sans accent) est un doublon
+        Categorie existante = new Categorie();
+        existante.setId(2L);
+        existante.setNom("Économie");
+        when(categorieRepository.findAll()).thenReturn(List.of(existante));
+
+        CategorieRequestDTO request = new CategorieRequestDTO();
+        request.setNom("Economie");
+
+        assertThrows(IllegalStateException.class, () -> categorieService.creerCategorie(request));
         verify(categorieRepository, never()).save(any(Categorie.class));
     }
 }

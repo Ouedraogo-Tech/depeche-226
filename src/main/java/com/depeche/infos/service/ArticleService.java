@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -134,26 +135,50 @@ public class ArticleService {
         return articleRepository.save(article);
     }
 
-    // Journaliste : BROUILLON ou A_REVISER -> SOUMIS, puis on prévient les responsables éditoriaux
     public Article soumettreArticle(Long id, String emailConnecte) {
+        return soumettreArticle(id, null, emailConnecte);
+    }
+
+    // Journaliste : BROUILLON, A_REVISER ou REFUSE (après correction) -> SOUMIS, puis on prévient les responsables.
+    // datePublicationSouhaitee (facultative) : appliquée seulement si l'article est validé.
+    public Article soumettreArticle(Long id, LocalDateTime datePublicationSouhaitee, String emailConnecte) {
         Article article = trouverArticle(id);
         verifierDroits(article, emailConnecte);
-        if (article.getStatut() != StatutArticle.BROUILLON && article.getStatut() != StatutArticle.A_REVISER) {
-            throw new IllegalStateException("Seul un brouillon ou un article à réviser peut être soumis.");
+        if (!STATUTS_SOUMETTABLES.contains(article.getStatut())) {
+            throw new IllegalStateException("Seul un brouillon, un article à réviser ou un article refusé peut être soumis.");
+        }
+        if (datePublicationSouhaitee != null && !datePublicationSouhaitee.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La date de publication souhaitée doit être dans le futur.");
         }
         article.setStatut(StatutArticle.SOUMIS);
+        article.setDatePublicationSouhaitee(datePublicationSouhaitee);
         Article sauvegarde = articleRepository.save(article);
 
         notificationService.notifierRole(ROLE_RESPONSABLE, TypeNotification.ARTICLE_SOUMIS,
-                "Nouvel article à valider : « " + article.getTitre() + " » par " + nomComplet(article.getAuteur()) + ".",
+                "Nouvel article à valider : « " + article.getTitre() + " » par " + nomComplet(article.getAuteur())
+                        + (datePublicationSouhaitee != null ? " (publication souhaitée le " + FORMAT_DATE.format(datePublicationSouhaitee) + ")" : "")
+                        + ".",
                 article.getId());
         return sauvegarde;
+    }
+
+    private static final Set<StatutArticle> STATUTS_SOUMETTABLES =
+            EnumSet.of(StatutArticle.BROUILLON, StatutArticle.A_REVISER, StatutArticle.REFUSE);
+    private static final DateTimeFormatter FORMAT_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH'h'mm");
+
+    // Un article en relecture (SOUMIS) attend la décision du responsable éditorial :
+    // personne ne peut le publier ni le planifier directement (sinon la validation serait contournée)
+    private void refuserSiEnRelecture(Article article) {
+        if (article.getStatut() == StatutArticle.SOUMIS) {
+            throw new IllegalStateException("Cet article est en relecture : il sera publié après la décision du responsable éditorial.");
+        }
     }
 
     // Publication directe (journaliste sur son article, ou responsable éditorial)
     public Article publierArticle(Long id, String emailConnecte) {
         Article article = trouverArticle(id);
         Utilisateur connecte = verifierDroits(article, emailConnecte);
+        refuserSiEnRelecture(article);
         article.setStatut(StatutArticle.PUBLIE);
         article.setDatePublication(LocalDateTime.now());
         Article sauvegarde = articleRepository.save(article);
@@ -169,6 +194,7 @@ public class ArticleService {
     public Article planifierArticle(Long id, LocalDateTime datePublication, String emailConnecte) {
         Article article = trouverArticle(id);
         verifierDroits(article, emailConnecte);
+        refuserSiEnRelecture(article);
         if (datePublication == null || !datePublication.isAfter(LocalDateTime.now())) {
             throw new IllegalArgumentException("La date de publication doit être dans le futur.");
         }
@@ -184,16 +210,24 @@ public class ArticleService {
         return articleRepository.save(article);
     }
 
-    // Responsable éditorial : SOUMIS -> PUBLIE (commentaire facultatif)
+    // Responsable éditorial : SOUMIS -> PUBLIE tout de suite, ou PLANIFIE si le journaliste a demandé
+    // une date encore à venir (commentaire facultatif)
     public Article validerArticle(Long id, String commentaire) {
         Article article = trouverArticleSoumis(id);
-        article.setStatut(StatutArticle.PUBLIE);
-        article.setDatePublication(LocalDateTime.now());
+        LocalDateTime souhaitee = article.getDatePublicationSouhaitee();
+        boolean aPlanifier = souhaitee != null && souhaitee.isAfter(LocalDateTime.now());
+
+        article.setStatut(aPlanifier ? StatutArticle.PLANIFIE : StatutArticle.PUBLIE);
+        article.setDatePublication(aPlanifier ? souhaitee : LocalDateTime.now());
+        article.setDatePublicationSouhaitee(null);
         article.setCommentaireEditorial(nettoyer(commentaire));
         Article sauvegarde = articleRepository.save(article);
 
         notificationService.notifier(article.getAuteur(), TypeNotification.ARTICLE_VALIDE,
-                "Votre article « " + article.getTitre() + " » a été validé et publié.", article.getId());
+                aPlanifier
+                        ? "Votre article « " + article.getTitre() + " » a été validé : il sera publié le " + FORMAT_DATE.format(souhaitee) + "."
+                        : "Votre article « " + article.getTitre() + " » a été validé et publié.",
+                article.getId());
         return sauvegarde;
     }
 
@@ -202,6 +236,7 @@ public class ArticleService {
         String retour = commentaireObligatoire(commentaire);
         Article article = trouverArticleSoumis(id);
         article.setStatut(StatutArticle.A_REVISER);
+        article.setDatePublicationSouhaitee(null); // la date demandée est annulée
         article.setCommentaireEditorial(retour);
         Article sauvegarde = articleRepository.save(article);
 
@@ -215,6 +250,7 @@ public class ArticleService {
         String retour = commentaireObligatoire(commentaire);
         Article article = trouverArticleSoumis(id);
         article.setStatut(StatutArticle.REFUSE);
+        article.setDatePublicationSouhaitee(null); // la date demandée est annulée
         article.setCommentaireEditorial(retour);
         Article sauvegarde = articleRepository.save(article);
 

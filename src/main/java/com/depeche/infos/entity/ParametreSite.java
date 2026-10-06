@@ -51,5 +51,10 @@ public class ParametreSite {
     @Column(columnDefinition = "TEXT")
     private String politiqueConfidentialite;
 
+    // Logos envoyés par le webmaster (adresse "/uploads/…") ; vide = le logo d'origine du site
+    private String logo;         // fond clair : en-tête du site public
+    private String logoBlanc;    // fond sombre : barre des espaces de travail
+    private String logoComplet;  // avec le slogan : pages de connexion
+
     private LocalDateTime dateMiseAJour;
 }

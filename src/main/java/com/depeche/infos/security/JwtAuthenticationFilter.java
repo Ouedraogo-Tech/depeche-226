@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -51,7 +55,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
                 // Correction : un compte suspendu (isEnabled() == false) ne peut plus utiliser un ancien token
-                if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled()) {
+                // Correction : si l'admin a changé le rôle du compte, le token (qui contient les anciennes
+                // permissions) n'est plus accepté → 401 → le site renvoie vers /connexion avec le bon rôle
+                if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled()
+                        && permissionsInchangees(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
@@ -64,5 +71,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    // Les permissions écrites dans le token à la connexion sont-elles toujours celles du compte ?
+    private boolean permissionsInchangees(String jwt, UserDetails userDetails) {
+        Object dansLeToken = jwtService.extractClaim(jwt, claims -> claims.get("permissions"));
+        if (!(dansLeToken instanceof Collection<?> liste)) {
+            return true; // ancien token sans cette information : on ne bloque pas
+        }
+        Set<String> duToken = liste.stream().map(String::valueOf).collect(Collectors.toSet());
+        Set<String> actuelles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
+        return duToken.equals(actuelles);
     }
 }

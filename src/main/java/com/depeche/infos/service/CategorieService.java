@@ -9,7 +9,9 @@ import com.depeche.infos.repository.CategorieRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class CategorieService {
@@ -25,12 +27,15 @@ public class CategorieService {
 
 
     //creer une categorie
+    // Doublon refusé même si seules les majuscules, les accents ou les espaces changent
+    // ("Politique" = "politique" = " POLITIQUE ", "Économie" = "Economie")
     public Categorie creerCategorie(CategorieRequestDTO request) {
-        if (categorieRepository.existsByNom(request.getNom())) {
-            throw new RuntimeException("Cette catégorie existe déjà !");
+        String nom = request.getNom().trim();
+        if (nomDejaPris(nom, null)) {
+            throw new IllegalStateException("La catégorie « " + nom + " » existe déjà.");
         }
         Categorie categorie = new Categorie();
-        categorie.setNom(request.getNom());
+        categorie.setNom(nom);
         categorie.setDescription(request.getDescription());
         return categorieRepository.save(categorie);
     }
@@ -51,12 +56,12 @@ public class CategorieService {
         Categorie categorieExistante = trouverCategorieParId(id);
 
         // Correction : empêcher de renommer une catégorie avec le nom d'une autre
-        boolean nomChange = !categorieExistante.getNom().equalsIgnoreCase(request.getNom());
-        if (nomChange && categorieRepository.existsByNom(request.getNom())) {
-            throw new RuntimeException("Cette catégorie existe déjà !");
+        String nom = request.getNom().trim();
+        if (nomDejaPris(nom, id)) {
+            throw new IllegalStateException("La catégorie « " + nom + " » existe déjà.");
         }
 
-        categorieExistante.setNom(request.getNom());
+        categorieExistante.setNom(nom);
         categorieExistante.setDescription(request.getDescription());
 
         return categorieRepository.save(categorieExistante);
@@ -71,6 +76,22 @@ public class CategorieService {
             throw new IllegalStateException("Impossible de supprimer cette catégorie : des articles l'utilisent encore.");
         }
         categorieRepository.delete(categorie);
+    }
+
+    // Une AUTRE catégorie (id différent de idIgnore) porte-t-elle déjà ce nom ?
+    private boolean nomDejaPris(String nom, Long idIgnore) {
+        String cle = normaliser(nom);
+        return categorieRepository.findAll().stream()
+                .anyMatch(c -> !c.getId().equals(idIgnore) && normaliser(c.getNom()).equals(cle));
+    }
+
+    // "  Économie " → "economie" : sans accents, en minuscules, espaces multiples réduits
+    private static String normaliser(String texte) {
+        return Normalizer.normalize(texte, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .trim()
+                .replaceAll("\\s+", " ")
+                .toLowerCase(Locale.ROOT);
     }
 
 

@@ -40,6 +40,8 @@ public class DataInitializer {
             // de statuts. Elle bloquerait les nouveaux statuts (A_REVISER, REFUSE) : on la supprime.
             // (ddl-auto=update ne met jamais à jour une contrainte existante)
             jdbcTemplate.execute("ALTER TABLE IF EXISTS article DROP CONSTRAINT IF EXISTS article_statut_check");
+            // Résumé agrandi de 300 à 1 000 caractères (ddl-auto=update n'agrandit jamais une colonne existante)
+            jdbcTemplate.execute("ALTER TABLE IF EXISTS article ALTER COLUMN resume TYPE varchar(1000)");
 
             System.out.println(">>> Synchronisation des rôles et permissions...");
 
