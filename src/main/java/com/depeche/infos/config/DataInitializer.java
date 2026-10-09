@@ -7,6 +7,7 @@ import com.depeche.infos.repository.PermissionRepository;
 import com.depeche.infos.repository.RoleRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
 import com.depeche.infos.service.AbonneNewsletterService;
+import com.depeche.infos.service.ArticleService;
 import com.depeche.infos.service.ParametreSiteService;
 import com.depeche.infos.service.UtilisateurService;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,12 +35,14 @@ public class DataInitializer {
     CommandLineRunner initDatabase(RoleRepository roleRepository, PermissionRepository permissionRepository,
                                    UtilisateurRepository utilisateurRepository, UtilisateurService utilisateurService,
                                    ParametreSiteService parametreSiteService, JdbcTemplate jdbcTemplate,
-                                   AbonneNewsletterService abonneNewsletterService) {
+                                   AbonneNewsletterService abonneNewsletterService, ArticleService articleService) {
         return args -> {
             // 0. Correction : Hibernate a créé une contrainte CHECK sur article.statut avec l'ANCIENNE liste
             // de statuts. Elle bloquerait les nouveaux statuts (A_REVISER, REFUSE) : on la supprime.
             // (ddl-auto=update ne met jamais à jour une contrainte existante)
             jdbcTemplate.execute("ALTER TABLE IF EXISTS article DROP CONSTRAINT IF EXISTS article_statut_check");
+            // Même problème pour les types de notification (nouveau type NOUVELLE_CATEGORIE)
+            jdbcTemplate.execute("ALTER TABLE IF EXISTS notification DROP CONSTRAINT IF EXISTS notification_type_check");
             // Résumé agrandi de 300 à 1 000 caractères (ddl-auto=update n'agrandit jamais une colonne existante)
             jdbcTemplate.execute("ALTER TABLE IF EXISTS article ALTER COLUMN resume TYPE varchar(1000)");
 
@@ -63,6 +66,8 @@ public class DataInitializer {
             Permission planifierArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_PLANIFIER");
             // Nouveau : valider / demander une modification / refuser un article soumis
             Permission validerArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_VALIDER");
+            // Nouveau : archiver un article (retiré du site et de l'historique par défaut, sans être supprimé)
+            Permission archiverArticle = createPermissionIfNotFound(permissionRepository, "ARTICLE_ARCHIVER");
 
 
             Permission creerCategorie = createPermissionIfNotFound(permissionRepository, "CATEGORIE_CREER");
@@ -104,7 +109,7 @@ public class DataInitializer {
             Role journaliste = roleRepository.findByName("JOURNALISTE").orElseGet(() -> new Role("JOURNALISTE"));
             journaliste.setPermissions(new HashSet<>(Arrays.asList(
                     redigerArticle, modifierArticle, publierArticle, soumettreArticle, consulterActualites, supprimerArticle,
-                    enregistrerBrouillon, lireArticles, planifierArticle
+                    enregistrerBrouillon, lireArticles, planifierArticle, archiverArticle
             )));
             roleRepository.save(journaliste);
 
@@ -113,7 +118,7 @@ public class DataInitializer {
             responsable.setPermissions(new HashSet<>(Arrays.asList(
                     redigerArticle, modifierArticle, enregistrerBrouillon,
                     supprimerArticle, publierArticle, consulterActualites, creerCategorie, lireCategorie, modifierCategorie,
-                    supprimerCategorie, suivreStats, planifierArticle, validerArticle
+                    supprimerCategorie, suivreStats, planifierArticle, validerArticle, archiverArticle
             )));
             roleRepository.save(responsable);
 
@@ -128,7 +133,8 @@ public class DataInitializer {
             // RÔLE ADMIN
             Role admin = roleRepository.findByName("ADMIN").orElseGet(() -> new Role("ADMIN"));
             admin.setPermissions(new HashSet<>(Arrays.asList(
-                    consulterActualites, creerComptes, attribuerRoles, consulterCategories, desactiverComptes, suivreStats
+                    consulterActualites, creerComptes, attribuerRoles, consulterCategories, desactiverComptes, suivreStats,
+                    archiverArticle
             )));
             roleRepository.save(admin);
 
@@ -155,6 +161,9 @@ public class DataInitializer {
 
             // 5. Newsletter : les abonnés créés avant l'ajout du jeton en reçoivent un
             abonneNewsletterService.attribuerJetonsManquants();
+
+            // 6. Adresse lisible (slug) pour les articles créés avant cette fonctionnalité
+            articleService.attribuerSlugsManquants();
         };
     }
 

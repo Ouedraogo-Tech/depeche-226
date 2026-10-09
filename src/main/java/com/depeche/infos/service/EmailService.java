@@ -24,7 +24,7 @@ public class EmailService {
 
     // Couleurs du site (tailwind.config.js du frontend)
     private static final String MARINE = "#1B2A4A";
-    private static final String BRIQUE = "#C0392B";
+    private static final String BRIQUE = "#C30909"; // rouge du logo
     private static final String CREME = "#F6F1E7";
 
     private final JavaMailSender mailSender;
@@ -115,7 +115,7 @@ public class EmailService {
 
         // Un bloc par article
         for (Article article : articles) {
-            String lienArticle = urlSite + "/articles/" + article.getId();
+            String lienArticle = urlSite + "/articles/" + lienPublic(article);
             String extrait = article.getResume() != null && !article.getResume().isBlank()
                     ? article.getResume()
                     : couper(article.getContenu(), 220);
@@ -157,7 +157,7 @@ public class EmailService {
         StringBuilder texte = new StringBuilder("DÉPÊCHE 226 — la sélection de la rédaction\n\n");
         for (Article article : articles) {
             texte.append("• ").append(article.getTitre()).append("\n")
-                 .append("  Lire la suite : ").append(urlSite).append("/articles/").append(article.getId()).append("\n");
+                 .append("  Lire la suite : ").append(urlSite).append("/articles/").append(lienPublic(article)).append("\n");
             if (article.getLienVideo() != null) {
                 texte.append("  Vidéo : ").append(article.getLienVideo()).append("\n");
             }
@@ -165,6 +165,11 @@ public class EmailService {
         }
         texte.append("Se désabonner : ").append(lienDesabonnement).append("\n");
         return texte.toString();
+    }
+
+    // Adresse publique de l'article : son slug lisible (le numéro seulement si l'article n'en a pas encore)
+    private static String lienPublic(Article article) {
+        return article.getSlug() != null ? article.getSlug() : String.valueOf(article.getId());
     }
 
     // "/uploads/photo.jpg" → "http://localhost:4200/uploads/photo.jpg" (une messagerie a besoin d'une adresse complète)

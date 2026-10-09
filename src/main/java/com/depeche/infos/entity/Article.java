@@ -22,6 +22,11 @@ public class Article {
     @Column(nullable = false)
     private String titre;
 
+    // Adresse publique lisible, construite à partir du titre : /articles/aes-france-diaspora-…
+    // (remplace le numéro de l'article dans l'adresse ; ne change plus ensuite, pour que les liens partagés restent valables)
+    @Column(unique = true, length = 120)
+    private String slug;
+
     // Chapeau affiché sur la page d'accueil (facultatif)
     @Column(length = 1000)
     private String resume;

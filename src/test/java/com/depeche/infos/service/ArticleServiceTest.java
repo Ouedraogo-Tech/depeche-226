@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -229,5 +230,33 @@ class ArticleServiceTest {
 
         assertEquals(StatutArticle.REFUSE, resultat.getStatut());
         assertNull(resultat.getDatePublicationSouhaitee());
+    }
+
+    @Test
+    void listerTousLesArticles_NeDoitPasMontrerLesBrouillonsDesAutres() {
+        // Un brouillon reste privé : le responsable éditorial ne voit que les articles soumis ou plus
+        Utilisateur journaliste = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        Article brouillon = article(journaliste, StatutArticle.BROUILLON);
+        Article soumis = article(journaliste, StatutArticle.SOUMIS);
+        soumis.setId(2L);
+        when(articleRepository.findAll(any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(brouillon, soumis));
+
+        List<Article> vusParLeResponsable = articleService.listerTousLesArticles("re@test.bf");
+        List<Article> vusParLAuteur = articleService.listerTousLesArticles("auteur@test.bf");
+
+        assertEquals(List.of(soumis), vusParLeResponsable);
+        assertEquals(2, vusParLAuteur.size());
+    }
+
+    @Test
+    void modifierArticle_BrouillonDunAutre_MemePourLeResponsable_DoitEtreIntrouvable() {
+        Utilisateur journaliste = utilisateur(10L, "auteur@test.bf", new Journaliste(), "JOURNALISTE");
+        Utilisateur responsable = utilisateur(20L, "re@test.bf", new ResponsableEditorial(), "RESPONSABLE_EDITORIAL");
+        when(articleRepository.findById(1L)).thenReturn(Optional.of(article(journaliste, StatutArticle.BROUILLON)));
+        when(utilisateurRepository.findByEmail("re@test.bf")).thenReturn(Optional.of(responsable));
+
+        assertThrows(com.depeche.infos.exception.RessourceIntrouvableException.class,
+                () -> articleService.modifierArticle(1L, new Article(), 1L, "re@test.bf"));
+        verify(articleRepository, never()).save(any());
     }
 }

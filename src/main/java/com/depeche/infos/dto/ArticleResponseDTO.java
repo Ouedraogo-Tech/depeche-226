@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class ArticleResponseDTO {
     private Long id;
     private String titre;
+    private String slug; // adresse publique lisible : /articles/{slug}
     private String resume;
     private String contenu;
     private String image;

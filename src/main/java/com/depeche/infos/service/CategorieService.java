@@ -3,6 +3,7 @@ package com.depeche.infos.service;
 
 import com.depeche.infos.dto.CategorieRequestDTO;
 import com.depeche.infos.entity.Categorie;
+import com.depeche.infos.enums.TypeNotification;
 import com.depeche.infos.exception.RessourceIntrouvableException;
 import com.depeche.infos.repository.ArticleRepository;
 import com.depeche.infos.repository.CategorieRepository;
@@ -19,10 +20,13 @@ public class CategorieService {
 
     private final CategorieRepository categorieRepository;
     private final ArticleRepository articleRepository;
+    private final NotificationService notificationService;
 
-    public CategorieService(CategorieRepository categorieRepository, ArticleRepository articleRepository) {
+    public CategorieService(CategorieRepository categorieRepository, ArticleRepository articleRepository,
+                            NotificationService notificationService) {
         this.categorieRepository = categorieRepository;
         this.articleRepository = articleRepository;
+        this.notificationService = notificationService;
     }
 
 
@@ -37,7 +41,13 @@ public class CategorieService {
         Categorie categorie = new Categorie();
         categorie.setNom(nom);
         categorie.setDescription(request.getDescription());
-        return categorieRepository.save(categorie);
+        Categorie sauvegarde = categorieRepository.save(categorie);
+
+        // Tous les journalistes (comptes actifs) sont prévenus qu'ils peuvent utiliser cette catégorie
+        notificationService.notifierRole("JOURNALISTE", TypeNotification.NOUVELLE_CATEGORIE,
+                "Nouvelle catégorie disponible : « " + nom + " ». Vous pouvez désormais l'utiliser pour vos articles.",
+                null);
+        return sauvegarde;
     }
 
 

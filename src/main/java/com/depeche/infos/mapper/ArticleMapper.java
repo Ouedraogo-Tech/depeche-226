@@ -28,6 +28,7 @@ public class ArticleMapper {
         ArticleResponseDTO dto = new ArticleResponseDTO();
         dto.setId(article.getId());
         dto.setTitre(article.getTitre());
+        dto.setSlug(article.getSlug());
         dto.setResume(article.getResume());
         dto.setContenu(article.getContenu());
         dto.setLienVideo(article.getLienVideo());

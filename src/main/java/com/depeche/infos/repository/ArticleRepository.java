@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ArticleRepository extends JpaRepository<Article, Long> {
@@ -45,4 +46,9 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
     // 7. Statistiques
     long countByStatut(StatutArticle statut);
+
+    // 8. Adresse publique lisible (slug)
+    Optional<Article> findBySlug(String slug);
+    boolean existsBySlug(String slug);
+    List<Article> findBySlugIsNull();
 }

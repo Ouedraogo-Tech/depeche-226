@@ -47,9 +47,10 @@ public class ArticleController {
     }
 
     // GET /api/articles/publies/1 : un article publié (404 s'il n'est pas publié)
-    @GetMapping("/publies/{id}")
-    public ResponseEntity<ArticleResponseDTO> obtenirArticlePublie(@PathVariable Long id) {
-        return ResponseEntity.ok(articleMapper.toPublicDTO(articleService.trouverArticlePublie(id)));
+    // {lien} = adresse lisible (slug), ou ancien numéro
+    @GetMapping("/publies/{lien}")
+    public ResponseEntity<ArticleResponseDTO> obtenirArticlePublie(@PathVariable String lien) {
+        return ResponseEntity.ok(articleMapper.toPublicDTO(articleService.trouverArticlePublie(lien)));
     }
 
     // ==================== BACK-OFFICE ====================
@@ -69,12 +70,14 @@ public class ArticleController {
 
     // GET /api/articles?statut=SOUMIS : tous les articles (tous statuts), filtre facultatif
     // Correction : réservé au back-office (avant, n'importe quel connecté voyait les brouillons)
+    // Les brouillons des AUTRES ne sont jamais renvoyés (un brouillon reste privé jusqu'à sa soumission)
     @PreAuthorize("hasAnyAuthority('ARTICLE_VALIDER', 'UTILISATEUR_CREER', 'STATISTIQUES_SUIVRE')")
     @GetMapping
     public ResponseEntity<List<ArticleResponseDTO>> listerArticles(@RequestParam(required = false) StatutArticle statut) {
+        String email = UtilisateurConnecte.email();
         List<Article> articles = (statut == null)
-                ? articleService.listerTousLesArticles()
-                : articleService.listerArticlesParStatut(statut);
+                ? articleService.listerTousLesArticles(email)
+                : articleService.listerArticlesParStatut(statut, email);
         return ResponseEntity.ok(versDTOs(articles));
     }
 
@@ -85,11 +88,11 @@ public class ArticleController {
         return ResponseEntity.ok(versDTOs(articleService.listerArticlesParAuteur(UtilisateurConnecte.email())));
     }
 
-    // GET /api/articles/1 : un article quel que soit son statut (back-office)
+    // GET /api/articles/1 : un article quel que soit son statut (back-office), sauf le brouillon d'un autre (404)
     @PreAuthorize("hasAnyAuthority('ARTICLE_ECRIRE', 'UTILISATEUR_CREER', 'STATISTIQUES_SUIVRE')")
     @GetMapping("/{id}")
     public ResponseEntity<ArticleResponseDTO> obtenirArticleParId(@PathVariable Long id) {
-        return articleService.rechercherArticleParId(id)
+        return articleService.rechercherArticleParId(id, UtilisateurConnecte.email())
                 .map(article -> ResponseEntity.ok(articleMapper.toResponseDTO(article)))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -144,7 +147,7 @@ public class ArticleController {
                 articleService.planifierArticle(id, datePublication, UtilisateurConnecte.email())));
     }
 
-    @PreAuthorize("hasAuthority('ARTICLE_PUBLIER')")
+    @PreAuthorize("hasAnyAuthority('ARTICLE_PUBLIER', 'ARTICLE_ARCHIVER')")
     @PatchMapping("/{id}/archiver")
     public ResponseEntity<ArticleResponseDTO> archiverArticle(@PathVariable Long id) {
         return ResponseEntity.ok(articleMapper.toResponseDTO(articleService.archiverArticle(id, UtilisateurConnecte.email())));

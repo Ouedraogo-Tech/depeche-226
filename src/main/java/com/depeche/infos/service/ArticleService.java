@@ -48,18 +48,30 @@ public class ArticleService {
 
     // ==================== LECTURE ====================
 
-    public Optional<Article> rechercherArticleParId(Long id) {
-        return articleRepository.findById(id);
+    // RÈGLE : un BROUILLON est privé. Seul son auteur le voit, tant qu'il ne l'a pas soumis
+    // (ni le responsable éditorial, ni l'administrateur, ni les autres journalistes).
+    private boolean visiblePar(Article article, String emailConnecte) {
+        return article.getStatut() != StatutArticle.BROUILLON
+                || (article.getAuteur() != null && article.getAuteur().getEmail().equalsIgnoreCase(emailConnecte));
     }
 
-    // Tous les articles (back-office), les plus récents en premier
-    public List<Article> listerTousLesArticles() {
-        return articleRepository.findAll(Sort.by(Sort.Direction.DESC, "dateCreation"));
+    // Un article par son numéro (back-office) ; le brouillon d'un autre est « introuvable »
+    public Optional<Article> rechercherArticleParId(Long id, String emailConnecte) {
+        return articleRepository.findById(id).filter(a -> visiblePar(a, emailConnecte));
+    }
+
+    // Tous les articles (back-office), les plus récents en premier, sans les brouillons des autres
+    public List<Article> listerTousLesArticles(String emailConnecte) {
+        return articleRepository.findAll(Sort.by(Sort.Direction.DESC, "dateCreation")).stream()
+                .filter(a -> visiblePar(a, emailConnecte))
+                .toList();
     }
 
     // Filtre par statut (ex : SOUMIS pour la file de validation du responsable éditorial)
-    public List<Article> listerArticlesParStatut(StatutArticle statut) {
-        return articleRepository.findByStatutOrderByDateCreationDesc(statut);
+    public List<Article> listerArticlesParStatut(StatutArticle statut, String emailConnecte) {
+        return articleRepository.findByStatutOrderByDateCreationDesc(statut).stream()
+                .filter(a -> visiblePar(a, emailConnecte))
+                .toList();
     }
 
     // Site public : uniquement les articles PUBLIES, avec filtre facultatif par catégorie et mot-clé
@@ -74,11 +86,47 @@ public class ArticleService {
                 .toList();
     }
 
-    // Site public : un article, seulement s'il est publié
-    public Article trouverArticlePublie(Long id) {
-        return articleRepository.findById(id)
+    // Site public : un article, seulement s'il est publié.
+    // "lien" = l'adresse lisible (slug) ; un ancien lien avec le numéro (/articles/7) fonctionne encore.
+    public Article trouverArticlePublie(String lien) {
+        Optional<Article> article = lien.matches("\\d+")
+                ? articleRepository.findById(Long.parseLong(lien))
+                : articleRepository.findBySlug(lien);
+        return article
                 .filter(a -> a.getStatut() == StatutArticle.PUBLIE)
-                .orElseThrow(() -> new RessourceIntrouvableException("Article introuvable avec l'id " + id));
+                .orElseThrow(() -> new RessourceIntrouvableException("Article introuvable."));
+    }
+
+    // Donne une adresse lisible aux articles créés avant l'ajout de cette fonctionnalité (appelé au démarrage)
+    @Transactional
+    public void attribuerSlugsManquants() {
+        for (Article article : articleRepository.findBySlugIsNull()) {
+            article.setSlug(genererSlug(article.getTitre()));
+            articleRepository.save(article);
+        }
+    }
+
+    // "AES, France, diaspora : Karamoko répond…" → "aes-france-diaspora-karamoko-repond"
+    // (sans accents, 80 caractères max. coupés à la fin d'un mot ; "-2", "-3"… si le titre existe déjà)
+    private String genererSlug(String titre) {
+        String base = normaliser(titre == null ? "" : titre).replace("œ", "oe").replace("æ", "ae")
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+        if (base.length() > 80) {
+            base = base.substring(0, 80);
+            int dernierTiret = base.lastIndexOf('-');
+            if (dernierTiret > 20) {
+                base = base.substring(0, dernierTiret);
+            }
+        }
+        if (base.isEmpty() || base.matches("\\d+")) {
+            base = "article-" + base; // jamais un simple nombre (confondu avec un ancien lien /articles/7)
+        }
+        String slug = base;
+        for (int n = 2; articleRepository.existsBySlug(slug); n++) {
+            slug = base + "-" + n;
+        }
+        return slug;
     }
 
     // 8. Lister les articles d'un auteur précis (pour "Mes articles" côté Journaliste)
@@ -96,6 +144,7 @@ public class ArticleService {
         article.setStatut(StatutArticle.BROUILLON);
         article.setDateCreation(LocalDateTime.now());
         article.setCategorie(trouverCategorie(categorieId));
+        article.setSlug(genererSlug(article.getTitre()));
         return articleRepository.save(article);
     }
 
@@ -203,9 +252,21 @@ public class ArticleService {
         return articleRepository.save(article);
     }
 
+    // Archiver : l'article quitte le site public et l'historique par défaut, sans être supprimé.
+    // L'auteur archive ses articles ; l'administrateur et le responsable éditorial, n'importe lequel (historique).
     public Article archiverArticle(Long id, String emailConnecte) {
         Article article = trouverArticle(id);
-        verifierDroits(article, emailConnecte);
+        Utilisateur connecte = trouverUtilisateur(emailConnecte);
+        boolean gestionnaire = connecte.getRoles().stream()
+                .anyMatch(role -> "ADMIN".equals(role.getName()) || ROLE_RESPONSABLE.equals(role.getName()));
+        if (!gestionnaire) {
+            verifierDroits(article, emailConnecte);
+        }
+        refuserSiBrouillonDunAutre(article, connecte); // un brouillon reste privé, même pour l'admin
+        refuserSiEnRelecture(article); // un article soumis attend d'abord la décision éditoriale
+        if (article.getStatut() == StatutArticle.ARCHIVE) {
+            throw new IllegalStateException("Cet article est déjà archivé.");
+        }
         article.setStatut(StatutArticle.ARCHIVE);
         return articleRepository.save(article);
     }
@@ -310,7 +371,15 @@ public class ArticleService {
         if (!estAuteur(article, connecte) && !estResponsable) {
             throw new ActionInterditeException("Vous ne pouvez agir que sur vos propres articles.");
         }
+        refuserSiBrouillonDunAutre(article, connecte);
         return connecte;
+    }
+
+    // Le brouillon d'un autre est privé : personne d'autre que son auteur ne peut agir dessus
+    private void refuserSiBrouillonDunAutre(Article article, Utilisateur connecte) {
+        if (article.getStatut() == StatutArticle.BROUILLON && !estAuteur(article, connecte)) {
+            throw new RessourceIntrouvableException("Article introuvable.");
+        }
     }
 
     // Statuts dans lesquels un journaliste peut modifier ou supprimer son article
