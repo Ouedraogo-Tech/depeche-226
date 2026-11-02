@@ -76,7 +76,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/articles/publies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/commentaires/article/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/parametres").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/parametres", "/api/parametres/a-propos").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/newsletter/abonner", "/api/newsletter/desabonner").permitAll()
                         // Images des articles
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()

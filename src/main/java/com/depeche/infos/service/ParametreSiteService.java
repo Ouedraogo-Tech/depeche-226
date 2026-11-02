@@ -1,6 +1,8 @@
 package com.depeche.infos.service;
 
+import com.depeche.infos.dto.AProposDTO;
 import com.depeche.infos.dto.ParametreSiteDTO;
+import com.depeche.infos.entity.Engagement;
 import com.depeche.infos.entity.ParametreSite;
 import com.depeche.infos.mapper.ParametreSiteMapper;
 import com.depeche.infos.repository.ParametreSiteRepository;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class ParametreSiteService {
@@ -50,6 +53,40 @@ public class ParametreSiteService {
         parametreSiteMapper.copierDans(dto, parametre);
         parametre.setDateMiseAJour(LocalDateTime.now());
         return parametreSiteRepository.save(parametre);
+    }
+
+    // 3. Modifier la page "À propos" (Webmaster) : n'écrase aucun autre paramètre
+    public ParametreSite modifierAPropos(AProposDTO dto) {
+        ParametreSite parametre = obtenirParametres();
+        parametreSiteMapper.copierAProposDans(dto, parametre);
+        parametre.setDateMiseAJour(LocalDateTime.now());
+        return parametreSiteRepository.save(parametre);
+    }
+
+    // Au démarrage : si la page "À propos" n'a jamais été remplie, on y met les textes d'origine du site
+    // (le texte de présentation est obligatoire, donc vide = jamais rempli)
+    public void initialiserAProposSiVide() {
+        ParametreSite parametre = obtenirParametres();
+        if (parametre.getAproposTexte() != null && !parametre.getAproposTexte().isBlank()) {
+            return;
+        }
+        parametre.setAproposTexte("""
+                Dépêche 226 est un média d'information en ligne consacré au Burkina Faso et au Sahel. Notre rôle : \
+                informer vite, mais surtout informer juste, sur la politique, l'économie, la société, la culture et le sport.
+
+                Les articles sont écrits par nos journalistes, puis relus et validés par un responsable éditorial avant \
+                d'être publiés. Ce double regard est notre garantie de qualité.""");
+        if (parametre.getAnneeCreation() == null) {
+            parametre.setAnneeCreation(2019);
+        }
+        if (parametre.getEngagements().isEmpty()) {
+            parametre.getEngagements().addAll(List.of(
+                    new Engagement("Vérifier avant de publier", "Chaque article est relu par un responsable éditorial avant sa mise en ligne."),
+                    new Engagement("Le terrain d'abord", "Nos journalistes racontent le Burkina Faso depuis les régions, au plus près des faits."),
+                    new Engagement("Indépendance", "Nous ne publions pas de contenu sponsorisé déguisé en information."),
+                    new Engagement("Ouverture au débat", "Les lecteurs peuvent réagir sous chaque article, dans le respect de chacun.")));
+        }
+        parametreSiteRepository.save(parametre);
     }
 
     // Première ligne de la table : valeurs de application.properties (aucune coordonnée écrite dans le code).

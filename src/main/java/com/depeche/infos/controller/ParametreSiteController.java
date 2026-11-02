@@ -1,5 +1,6 @@
 package com.depeche.infos.controller;
 
+import com.depeche.infos.dto.AProposDTO;
 import com.depeche.infos.dto.ParametreSiteDTO;
 import com.depeche.infos.mapper.ParametreSiteMapper;
 import com.depeche.infos.service.ParametreSiteService;
@@ -32,5 +33,18 @@ public class ParametreSiteController {
     @PutMapping
     public ResponseEntity<ParametreSiteDTO> modifierParametres(@Valid @RequestBody ParametreSiteDTO request) {
         return ResponseEntity.ok(parametreSiteMapper.toDTO(parametreSiteService.modifierParametres(request)));
+    }
+
+    // GET /api/parametres/a-propos : PUBLIC (page "À propos" du site)
+    @GetMapping("/a-propos")
+    public ResponseEntity<AProposDTO> obtenirAPropos() {
+        return ResponseEntity.ok(parametreSiteMapper.toAProposDTO(parametreSiteService.obtenirParametres()));
+    }
+
+    // PUT /api/parametres/a-propos : Webmaster uniquement
+    @PreAuthorize("hasAuthority('PARAMETRES_GERER')")
+    @PutMapping("/a-propos")
+    public ResponseEntity<AProposDTO> modifierAPropos(@Valid @RequestBody AProposDTO request) {
+        return ResponseEntity.ok(parametreSiteMapper.toAProposDTO(parametreSiteService.modifierAPropos(request)));
     }
 }

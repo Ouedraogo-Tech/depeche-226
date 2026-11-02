@@ -158,6 +158,8 @@ public class DataInitializer {
 
             // 4. Paramètres du footer par défaut
             parametreSiteService.obtenirParametres();
+            // Page "À propos" : textes d'origine si le webmaster ne l'a jamais remplie
+            parametreSiteService.initialiserAProposSiVide();
 
             // 5. Newsletter : les abonnés créés avant l'ajout du jeton en reçoivent un
             abonneNewsletterService.attribuerJetonsManquants();

@@ -1,6 +1,8 @@
 package com.depeche.infos.mapper;
 
+import com.depeche.infos.dto.AProposDTO;
 import com.depeche.infos.dto.ParametreSiteDTO;
+import com.depeche.infos.entity.Engagement;
 import com.depeche.infos.entity.ParametreSite;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +52,30 @@ public class ParametreSiteMapper {
         parametre.setLogo(vide(dto.getLogo()));
         parametre.setLogoBlanc(vide(dto.getLogoBlanc()));
         parametre.setLogoComplet(vide(dto.getLogoComplet()));
+    }
+
+    // Page "À propos"
+    public AProposDTO toAProposDTO(ParametreSite parametre) {
+        if (parametre == null) return null;
+        AProposDTO dto = new AProposDTO();
+        dto.setTexte(parametre.getAproposTexte());
+        dto.setAnneeCreation(parametre.getAnneeCreation());
+        dto.setEngagements(parametre.getEngagements().stream().map(e -> {
+            AProposDTO.EngagementDTO engagement = new AProposDTO.EngagementDTO();
+            engagement.setTitre(e.getTitre());
+            engagement.setTexte(e.getTexte());
+            return engagement;
+        }).toList());
+        dto.setDateMiseAJour(parametre.getDateMiseAJour());
+        return dto;
+    }
+
+    // Copie la page "À propos" dans l'entité (la liste est vidée puis remplie : Hibernate garde la même collection)
+    public void copierAProposDans(AProposDTO dto, ParametreSite parametre) {
+        parametre.setAproposTexte(dto.getTexte().trim());
+        parametre.setAnneeCreation(dto.getAnneeCreation());
+        parametre.getEngagements().clear();
+        dto.getEngagements().forEach(e -> parametre.getEngagements().add(new Engagement(e.getTitre().trim(), e.getTexte().trim())));
     }
 
     // "" ou espaces → null (le footer cache simplement le logo / le lien)

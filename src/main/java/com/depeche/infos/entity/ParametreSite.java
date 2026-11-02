@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 // Paramètres généraux du site, affichés dans le footer et gérés par le Webmaster.
 // Il n'existe qu'UNE seule ligne dans cette table (créée au démarrage par DataInitializer).
@@ -55,6 +57,17 @@ public class ParametreSite {
     private String logo;         // fond clair : en-tête du site public
     private String logoBlanc;    // fond sombre : barre des espaces de travail
     private String logoComplet;  // avec le slogan : pages de connexion
+
+    // Page "À propos" (gérée par le webmaster) : texte de présentation, année de création, engagements
+    @Column(columnDefinition = "TEXT")
+    private String aproposTexte;
+
+    private Integer anneeCreation;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "parametre_site_engagement", joinColumns = @JoinColumn(name = "parametre_site_id"))
+    @OrderColumn(name = "ordre")
+    private List<Engagement> engagements = new ArrayList<>();
 
     private LocalDateTime dateMiseAJour;
 }
