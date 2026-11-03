@@ -8,6 +8,7 @@ import com.depeche.infos.repository.RoleRepository;
 import com.depeche.infos.repository.UtilisateurRepository;
 import com.depeche.infos.service.AbonneNewsletterService;
 import com.depeche.infos.service.ArticleService;
+import com.depeche.infos.service.MediaService;
 import com.depeche.infos.service.ParametreSiteService;
 import com.depeche.infos.service.UtilisateurService;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +36,8 @@ public class DataInitializer {
     CommandLineRunner initDatabase(RoleRepository roleRepository, PermissionRepository permissionRepository,
                                    UtilisateurRepository utilisateurRepository, UtilisateurService utilisateurService,
                                    ParametreSiteService parametreSiteService, JdbcTemplate jdbcTemplate,
-                                   AbonneNewsletterService abonneNewsletterService, ArticleService articleService) {
+                                   AbonneNewsletterService abonneNewsletterService, ArticleService articleService,
+                                   MediaService mediaService) {
         return args -> {
             // 0. Correction : Hibernate a créé une contrainte CHECK sur article.statut avec l'ANCIENNE liste
             // de statuts. Elle bloquerait les nouveaux statuts (A_REVISER, REFUSE) : on la supprime.
@@ -166,6 +168,12 @@ public class DataInitializer {
 
             // 6. Adresse lisible (slug) pour les articles créés avant cette fonctionnalité
             articleService.attribuerSlugsManquants();
+
+            // 7. Images : celles de l'ancien dossier "uploads/" sont copiées dans la base (une seule fois)
+            int imagesImportees = mediaService.importerAnciennesImages();
+            if (imagesImportees > 0) {
+                System.out.println(">>> " + imagesImportees + " image(s) du dossier uploads/ importée(s) dans la base");
+            }
         };
     }
 
